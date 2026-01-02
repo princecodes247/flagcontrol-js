@@ -11,9 +11,10 @@
     "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@biomejs/biome": "1.5.3",
+    "@changesets/cli": "^2.29.8",
     "tsup": "^8.0.0",
-    "vitest": "^1.0.0",
-    "@biomejs/biome": "1.5.3"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

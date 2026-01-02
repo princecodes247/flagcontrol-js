@@ -2,8 +2,7 @@ import './App.css'
 import { FlagProvider, useFlag } from '@flagcontrol/react'
 
 function AppContent() {
-  const isNewFeatureEnabled = useFlag('new-feature', false)
-
+  const isNewFeatureEnabled = useFlag('prince-sss', "")
   return (
     <>
       <div className="card">

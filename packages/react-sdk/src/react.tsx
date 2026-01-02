@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { initFlagControl, type FlagControlClient } from './client';
-import type { FlagControlConfig, Flag, EvaluationContext } from '@flagcontrol/core';
+import type { FlagControlConfig, Flag, EvaluationContext, RegisteredFlags } from '@flagcontrol/core';
 
 const FlagControlContext = createContext<FlagControlClient | null>(null);
 
@@ -46,11 +46,12 @@ export const useFlagControl = (): FlagControlClient => {
     return client;
 };
 
-export const useFlag = <T = any>(
-    key: string,
-    defaultValue: T,
+
+export const useFlag = <T extends keyof RegisteredFlags & string>(
+    key: T,
+    defaultValue: RegisteredFlags[T],
     context: EvaluationContext = {}
-): T => {
+): RegisteredFlags[T] => {
     const client = useFlagControl();
 
     const [value, setValue] = useState<T>(() => {

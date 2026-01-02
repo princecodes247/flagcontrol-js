@@ -117,11 +117,16 @@ export const initFlagControl = <
 };
 
 
+/**
+ * Creates a new FlagControl client.
+ *
+ * @param config - The configuration for the SDK, including the SDK key.
+ * @param offlineFlags - Optional list of flags to use in offline mode.
+ * @returns A FlagControlClient instance.
+ */
 export function createFlagControlClient<
   F extends Record<string, any> = RegisteredFlags,
 >(config: FlagControlConfig, offlineFlags: readonly Flag[] = []): FlagControlClient<F> {
-  // return new FlagControlClient(config, offlineFlags);
   const client = initFlagControl(config, offlineFlags);
   return client as any as FlagControlClient<F>
-
 }

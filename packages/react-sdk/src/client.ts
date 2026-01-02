@@ -1,28 +1,23 @@
 import {
-  Evaluator,
-  createEventManager,
-  createLoader,
-  createStore,
-  createTelemetryManager,
+  AnyFlags,
+  createBaseClient,
+  type BaseClient,
   type EvaluationContext,
   type Flag,
   type FlagControlConfig,
-  type RegisteredFlags
+  type RegisteredFlags,
 } from "@flagcontrol/core";
-
 
 export type FlagControlClient<
   F extends Record<string, any> = RegisteredFlags,
-> = {
-  get: <K extends keyof F & string>(
-    key: K,
-    context?: EvaluationContext,
-    fallbackValue?: F[K]
-  ) => F[K] | undefined;
-  reload: () => Promise<void>;
-  isEnabled: <K extends keyof F & string>(key: K, context?: EvaluationContext) => boolean;
-  waitForInitialization: () => Promise<void>;
-  close: () => void;
+> = Omit<BaseClient<F>,
+  "_internalEvaluate"
+  | "_events"
+  | "_telemetry"
+  | "_store"
+  | "_loader"
+  | "_config"
+> & {
   subscribe: (listener: () => void) => () => void;
 };
 
@@ -32,11 +27,7 @@ export const initFlagControl = <
   config: FlagControlConfig,
   offlineFlags: readonly Flag[] = []
 ): FlagControlClient<F> => {
-  const store = createStore(offlineFlags);
-  const loader = createLoader(config);
-  const events = createEventManager(config, loader, store);
-  const telemetry = createTelemetryManager(config);
-  const evaluator = new Evaluator();
+  const baseClient = createBaseClient<F>(config, offlineFlags);
   const listeners = new Set<() => void>();
 
   const subscribe = (listener: () => void) => {
@@ -48,87 +39,31 @@ export const initFlagControl = <
     listeners.forEach((listener) => listener());
   };
 
-  // Initial load
-  const initPromise = (async () => {
-    try {
-      const flags = await loader.getFlags();
-      store.set(flags);
-      status = 'ready';
-      config.onFlagsUpdated?.();
-      notifyListeners();
-    } catch (error) {
-      status = 'error';
-      config.onError?.(error as Error);
-    } finally {
-      events.start();
-      telemetry.start();
-    }
-  })();
+  // Hook into base client events
+  // We need to wrap reload and also listen for internal updates if possible.
+  // Since BaseClient doesn't expose a generic "onUpdate", we rely on wrapping reload
+  // and potentially the config callback if we could hook into it, but config is passed to BaseClient.
+  // A better way would be if BaseClient allowed adding listeners.
+  // For now, we wrap reload.
 
-  const waitForInitialization = () => initPromise;
-
-
-  const internalEvaluate = (
-    key: string,
-    context: EvaluationContext,
-    callsiteFallback?: any
-  ) => {
-    const flag = store.get(key);
-
-    // Determine the result
-    let result: any;
-    let source: 'remote' | 'fallback' | 'default' = 'remote';
-
-    if (!flag) {
-      result = callsiteFallback;
-      source = 'fallback';
-    } else {
-      try {
-        result = evaluator.evaluate(flag, context) ?? flag.defaultValue ?? callsiteFallback;
-      } catch (error) {
-        config.onError?.(error as Error);
-        result = flag.defaultValue ?? callsiteFallback;
-        source = 'default';
-      }
-    }
-
-    telemetry.record({
-      flagKey: key,
-      value: result,
-      timestamp: Date.now(),
-      metadata: { source, sdkStatus: status }
-    });
-
-    return result;
+  const originalReload = baseClient.reload;
+  const reload = async () => {
+    await originalReload();
+    notifyListeners();
   };
 
-  const reload = async (): Promise<void> => {
-    try {
-      const flags = await loader.getFlags();
-      store.set(flags);
-      config.onFlagsUpdated?.();
-      notifyListeners();
-    } catch (error) {
-      config.onError?.(error as Error);
-      throw error;
-    }
-  };
+  // We also need to trigger notifyListeners when the initial load completes.
+  // BaseClient starts loading immediately. We can chain off waitForInitialization.
+  baseClient.waitForInitialization().then(() => {
+    notifyListeners();
+  });
 
   return {
-    get: (key, context = {}, fallback) =>
-      internalEvaluate(key as string, context, fallback),
+    ...baseClient,
     reload,
-    isEnabled: (key, context = {}) =>
-      internalEvaluate(key, context, false) === true,
-    waitForInitialization,
-    close: async () => {
-      events.stop();
-      await telemetry.stop();
-    },
     subscribe,
   };
 };
-
 
 /**
  * Creates a new FlagControl client for React applications.
@@ -138,8 +73,11 @@ export const initFlagControl = <
  * @returns A FlagControlClient instance.
  */
 export function createFlagControlClient<
-  F extends Record<string, any> = RegisteredFlags,
->(config: FlagControlConfig, offlineFlags: readonly Flag[] = []): FlagControlClient<F> {
+  F extends AnyFlags = RegisteredFlags,
+>(
+  config: FlagControlConfig,
+  offlineFlags: readonly Flag[] = []
+): FlagControlClient<F> {
   const client = initFlagControl(config, offlineFlags);
-  return client as any as FlagControlClient<F>
+  return client as FlagControlClient<F>;
 }

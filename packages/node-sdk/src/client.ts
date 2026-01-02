@@ -1,54 +1,40 @@
 import {
   AnyFlags,
-  Evaluator,
-  createEventManager,
-  createLoader,
-  createStore,
-  createTelemetryManager,
+  createBaseClient,
+  type BaseClient,
+  type ClientStatus,
   type EvaluationContext,
+  type EvaluationResult,
   type Flag,
   type FlagControlConfig,
-  type RegisteredFlags
+  type RegisteredFlags,
 } from "@flagcontrol/core";
 
-export type ClientStatus = 'loading' | 'ready' | 'error';
-
-export type EvaluationResult<T> = {
-  value: T | undefined;
-  source: "remote" | "default" | "fallback";
-  reason?: string;
-};
+export type { ClientStatus, EvaluationResult };
 
 export type FlagChangeHandler<T = any> = (value: T | undefined) => void;
 
-
 export type FlagControlClient<
   F extends Record<string, any> = RegisteredFlags,
-> = {
-  get: <K extends keyof F & string>(
-    key: K,
-    context?: EvaluationContext,
-    fallbackValue?: F[K]
-  ) => F[K] | undefined;
-  isEnabled: <K extends keyof F & string>(key: K, context?: EvaluationContext) => boolean;
-
+> = Omit<BaseClient<F>,
+  "_internalEvaluate"
+  | "_events"
+  | "_telemetry"
+  | "_store"
+  | "_loader"
+  | "_config"
+> & {
   evaluate: <K extends keyof F & string>(
     key: K,
     context?: EvaluationContext,
     fallbackValue?: F[K]
   ) => EvaluationResult<F[K]>;
 
-  reload: () => Promise<void>;
-  waitForInitialization: () => Promise<void>;
-  close: () => void;
-  status: () => ClientStatus;
-
   onFlagChange: <K extends keyof F & string>(
     key: K,
     handler: FlagChangeHandler<F[K]>
   ) => () => void;
   onFlagsChange: (handler: () => void) => () => void;
-
 
   setContext: (context: EvaluationContext) => void;
   clearContext: () => void;
@@ -60,80 +46,31 @@ export const initFlagControl = <
   config: FlagControlConfig,
   offlineFlags: readonly Flag[] = []
 ): FlagControlClient<F> => {
-  const store = createStore(offlineFlags);
-  const loader = createLoader(config);
-  const events = createEventManager(config, loader, store);
-  const telemetry = createTelemetryManager(config);
-  const evaluator = new Evaluator();
+  const baseClient = createBaseClient<F>(config, offlineFlags);
 
-  let status: ClientStatus = 'loading';
   let globalContext: EvaluationContext = {};
 
   const flagListeners = new Map<string, Set<FlagChangeHandler>>();
   const globalListeners = new Set<() => void>();
 
-  // Initial load
-  const initPromise = (async () => {
-    try {
-      const flags = await loader.getFlags();
-      store.set(flags);
-      status = 'ready';
-      config.onFlagsUpdated?.();
-    } catch (error) {
-      status = 'error';
-      config.onError?.(error as Error);
-    } finally {
-      // events.start(() => {
-      //   notifyAll();
-      // });
-      events.start()
-      telemetry.start();
-    }
-  })();
-
-  const waitForInitialization = () => initPromise;
-
   const notifyAll = () => {
     globalListeners.forEach((fn) => fn());
 
     for (const [key, handlers] of flagListeners.entries()) {
-      const value = internalEvaluate(key, globalContext).value;
+      const value = baseClient._internalEvaluate(key, globalContext).value;
       handlers.forEach((h) => h(value));
     }
   };
 
-  const internalEvaluate = (
-    key: string,
-    context: EvaluationContext,
-    callsiteFallback?: any
-  ) => {
-    const flag = store.get(key);
+  // Hook into base client events if possible, or just rely on manual reload/updates
+  // Since BaseClient doesn't expose event hooks directly, we might need to wrap reload
+  // or rely on config callbacks if we want to trigger listeners.
+  // For now, let's wrap reload.
 
-    // Determine the result
-    let result: any;
-    let source: 'remote' | 'fallback' | 'default' = 'remote';
-
-    if (!flag) {
-      result = callsiteFallback;
-      source = 'fallback';
-    } else {
-      try {
-        result = evaluator.evaluate(flag, context) ?? flag.defaultValue ?? callsiteFallback;
-      } catch (error) {
-        config.onError?.(error as Error);
-        result = flag.defaultValue ?? callsiteFallback;
-        source = 'default';
-      }
-    }
-
-    telemetry.record({
-      flagKey: key,
-      value: result,
-      timestamp: Date.now(),
-      metadata: { source, sdkStatus: status }
-    });
-
-    return result;
+  const originalReload = baseClient.reload;
+  const reload = async () => {
+    await originalReload();
+    notifyAll();
   };
 
   const evaluate = <K extends keyof F & string>(
@@ -141,54 +78,37 @@ export const initFlagControl = <
     context: EvaluationContext = {},
     fallback?: F[K]
   ): EvaluationResult<F[K]> => {
-    const result = internalEvaluate(
+    const result = baseClient._internalEvaluate(
       key,
       { ...globalContext, ...context },
       fallback
     );
 
-    if (status === "ready") {
-      telemetry.record({
+    if (baseClient.status() === "ready") {
+      baseClient._telemetry.record({
         flagKey: key,
         value: result.value,
         timestamp: Date.now(),
         metadata: {
           source: result.source,
-          sdkStatus: status,
+          sdkStatus: baseClient.status(),
         },
       });
     }
 
-    return result;
-  };
-
-  const reload = async (): Promise<void> => {
-    status = 'loading'
-    try {
-      const flags = await loader.getFlags();
-      store.set(flags);
-      config.onFlagsUpdated?.();
-      status = 'ready'
-    } catch (error) {
-      config.onError?.(error as Error);
-      status = 'error'
-    }
+    return result as EvaluationResult<F[K]>;
   };
 
   return {
+    close: baseClient.close,
+    status: baseClient.status,
+    waitForInitialization: baseClient.waitForInitialization,
+    evaluate,
+    reload,
     get: (key, context = {}, fallback) =>
       evaluate(key, context, fallback).value,
     isEnabled: (key, context = {}) =>
-      internalEvaluate(key, context, false).value === true,
-    evaluate,
-
-    reload,
-    waitForInitialization,
-    close: async () => {
-      events.stop();
-      await telemetry.stop();
-    },
-    status: () => status,
+      evaluate(key, context, false as any).value === true,
 
     setContext: (ctx) => {
       globalContext = ctx;
@@ -211,10 +131,8 @@ export const initFlagControl = <
       globalListeners.add(handler);
       return () => globalListeners.delete(handler);
     },
-
   };
 };
-
 
 /**
  * Creates a new FlagControl client.
@@ -225,7 +143,10 @@ export const initFlagControl = <
  */
 export function createFlagControlClient<
   F extends AnyFlags = RegisteredFlags,
->(config: FlagControlConfig, offlineFlags: readonly Flag[] = []): FlagControlClient<F> {
+>(
+  config: FlagControlConfig,
+  offlineFlags: readonly Flag[] = []
+): FlagControlClient<F> {
   const client = initFlagControl(config, offlineFlags);
-  return client as FlagControlClient<F>
+  return client as FlagControlClient<F>;
 }

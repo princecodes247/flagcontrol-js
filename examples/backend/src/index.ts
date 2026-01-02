@@ -13,7 +13,7 @@ const flagControl = createFlagControlClient({
 app.get('/', async (req, res) => {
     try {
         // Example flag evaluation
-        const isFeatureEnabled = flagControl.get("go-flag", {
+        const isFeatureEnabled = flagControl.get("prince-sss", {
             userId: 'user-123',
         });
 

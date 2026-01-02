@@ -5,3 +5,4 @@ export * from './events';
 export * from './telemetry';
 export * from './loader';
 export * from './utils/hashing';
+export * from './client';

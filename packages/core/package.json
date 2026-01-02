@@ -1,0 +1,16 @@
+{
+  "name": "@flagcontrol/core",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npx tsup src/index.ts --format cjs,esm --dts",
+    "lint": "biome check src"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@biomejs/biome": "1.5.3"
+  }
+}

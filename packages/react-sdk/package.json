@@ -1,0 +1,23 @@
+{
+  "name": "@flagcontrol/react",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npx tsup src/index.ts --format cjs,esm",
+    "lint": "biome check src"
+  },
+  "dependencies": {
+    "@flagcontrol/core": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@biomejs/biome": "1.5.3",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0"
+  }
+}

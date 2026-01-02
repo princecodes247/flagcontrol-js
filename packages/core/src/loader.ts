@@ -5,12 +5,14 @@ export type Loader = {
   getManifest: (signal?: AbortSignal) => Promise<FlagManifest[]>;
 };
 
+const DEFAULT_API_BASE_URL = "https://api.flagcontrol.com/v1";
+
 export const createLoader = (config: FlagControlConfig): Loader => {
   return {
     getFlags: async (signal?: AbortSignal): Promise<Flag[]> => {
-      const baseUrl = config.apiBaseUrl || "https://api.flagcontrol.com/v1";
+      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
       const url = `${baseUrl}/sdk/flags`;
-      const fetchImpl = config.fetch || globalThis.fetch;
+      const fetchImpl = config.fetch || global.fetch;
 
       if (!fetchImpl) {
         throw new Error(
@@ -47,9 +49,9 @@ export const createLoader = (config: FlagControlConfig): Loader => {
       }
     },
     getManifest: async (signal?: AbortSignal): Promise<FlagManifest[]> => {
-      const baseUrl = config.apiBaseUrl || "https://api.flagcontrol.com/v1";
+      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
       const url = `${baseUrl}/sdk/manifest`;
-      const fetchImpl = config.fetch || globalThis.fetch;
+      const fetchImpl = config.fetch || global.fetch;
 
       if (!fetchImpl) {
         throw new Error(

@@ -20,7 +20,7 @@ export type FlagControlClient<
     fallbackValue?: F[K]
   ) => F[K] | undefined;
   reload: () => Promise<void>;
-  isEnabled: (key: string, context?: EvaluationContext) => boolean;
+  isEnabled: <K extends keyof F & string>(key: K, context?: EvaluationContext) => boolean;
   waitForInitialization: () => Promise<void>;
   close: () => void;
   subscribe: (listener: () => void) => () => void;

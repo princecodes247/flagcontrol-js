@@ -9,16 +9,20 @@
   },
   "scripts": {
     "build": "npx tsup src/index.ts --format cjs,esm --dts",
+    "test": "vitest run",
     "lint": "biome check src"
   },
   "dependencies": {
     "@flagcontrol/core": "*",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "minimist": "^1.2.8"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.5.3",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "@types/node": "^20.0.0",
-    "@biomejs/biome": "1.5.3"
+    "vitest": "^1.6.1"
   }
 }

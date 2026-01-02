@@ -110,7 +110,12 @@ export async function generateTypes(
         lines.push("");
 
         const content = lines.join("\n");
-        const fullPath = path.resolve(process.cwd(), outputPath);
+        let fullPath = path.resolve(process.cwd(), outputPath);
+
+        // If the path is a directory or doesn't end with .d.ts, append flagcontrol.d.ts
+        if (!fullPath.endsWith(".d.ts")) {
+            fullPath = path.join(fullPath, "flagcontrol.d.ts");
+        }
 
         // Ensure directory exists
         const dir = path.dirname(fullPath);

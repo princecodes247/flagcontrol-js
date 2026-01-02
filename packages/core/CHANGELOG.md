@@ -1,7 +1,7 @@
 # @flagcontrol/core
 
-## 0.1.1
+## 0.1.2
 
 ### Patch Changes
 
-- implement base logic for flagcontrol
+- fix docs

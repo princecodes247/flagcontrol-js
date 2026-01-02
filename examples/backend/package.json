@@ -1,6 +1,7 @@
 {
   "name": "backend-example",
   "version": "1.0.0",
+  "private": true,
   "description": "Example backend app using Flagcontrol Node SDK",
   "main": "index.js",
   "scripts": {

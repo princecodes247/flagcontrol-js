@@ -1,6 +1,7 @@
 {
   "name": "@flagcontrol/react",
   "version": "0.1.2",
+  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },

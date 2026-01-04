@@ -1,6 +1,7 @@
 {
   "name": "flagcontrol-sdks",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "packages/*",
     "examples/*"

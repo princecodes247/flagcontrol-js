@@ -9,7 +9,7 @@ This monorepo contains the official SDKs and tools for [Flagcontrol](https://fla
 | [`@flagcontrol/core`](./packages/core) | Core logic shared across SDKs | [![npm](https://img.shields.io/npm/v/@flagcontrol/core)](https://www.npmjs.com/package/@flagcontrol/core) |
 | [`@flagcontrol/node`](./packages/node-sdk) | Node.js Server-side SDK | [![npm](https://img.shields.io/npm/v/@flagcontrol/node)](https://www.npmjs.com/package/@flagcontrol/node) |
 | [`@flagcontrol/react`](./packages/react-sdk) | React Client-side SDK | [![npm](https://img.shields.io/npm/v/@flagcontrol/react)](https://www.npmjs.com/package/@flagcontrol/react) |
-| [`@flagcontrol/generator`](./packages/generator) | TypeScript definition generator | [![npm](https://img.shields.io/npm/v/@flagcontrol/generator)](https://www.npmjs.com/package/@flagcontrol/generator) |
+| [`flagcontrol`](./packages/generator) | TypeScript definition generator | [![npm](https://img.shields.io/npm/v/flagcontrol)](https://www.npmjs.com/package/flagcontrol) |
 
 ## Getting Started
 

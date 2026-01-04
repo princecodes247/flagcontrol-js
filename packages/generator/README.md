@@ -1,11 +1,11 @@
-# @flagcontrol/generator
+# flagcontrol
 
 Code generator for Flagcontrol types.
 
 ## Installation
 
 ```bash
-npm install -D @flagcontrol/generator
+npm install -D flagcontrol
 ```
 
 ## Usage

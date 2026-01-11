@@ -1,7 +1,15 @@
-import type { Flag, FlagManifest, FlagControlConfig } from "./types";
+import type {
+  Flag,
+  FlagManifest,
+  FlagControlConfig,
+  EvaluationContext,
+} from "./types";
 
 export type Loader = {
-  getFlags: (signal?: AbortSignal) => Promise<Flag[]>;
+  getFlags: (
+    context?: EvaluationContext,
+    signal?: AbortSignal
+  ) => Promise<Flag[]>;
   getManifest: (signal?: AbortSignal) => Promise<FlagManifest[]>;
 };
 
@@ -9,9 +17,17 @@ const DEFAULT_API_BASE_URL = "https://api.flagcontrol.com/v1";
 
 export const createLoader = (config: FlagControlConfig): Loader => {
   return {
-    getFlags: async (signal?: AbortSignal): Promise<Flag[]> => {
+    getFlags: async (
+      context?: EvaluationContext,
+      signal?: AbortSignal
+    ): Promise<Flag[]> => {
       const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-      const url = `${baseUrl}/sdk/flags`;
+      let url = `${baseUrl}/sdk/flags`;
+
+      if (context) {
+        const contextStr = encodeURIComponent(JSON.stringify(context));
+        url += `?context=${contextStr}`;
+      }
       const fetchImpl = config.fetch || global.fetch;
 
       if (!fetchImpl) {

@@ -25,6 +25,7 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
         fallbackValue?: F[K]
     ) => F[K] | undefined;
     reload: () => Promise<void>;
+    identify: (context: EvaluationContext) => Promise<void>;
     isEnabled: <K extends keyof F & string>(
         key: K,
         context?: EvaluationContext
@@ -114,10 +115,27 @@ export const createBaseClient = <
         return { value: result, source };
     };
 
+    let lastContext: EvaluationContext | undefined;
+
+    const identify = async (context: EvaluationContext): Promise<void> => {
+        lastContext = context;
+        status = "loading";
+        try {
+            const flags = await loader.getFlags(context);
+            store.set(flags);
+            config.onFlagsUpdated?.();
+            status = "ready";
+        } catch (error) {
+            config.onError?.(error as Error);
+            status = "error";
+            throw error;
+        }
+    };
+
     const reload = async (): Promise<void> => {
         status = "loading";
         try {
-            const flags = await loader.getFlags();
+            const flags = await loader.getFlags(lastContext);
             store.set(flags);
             config.onFlagsUpdated?.();
             status = "ready";
@@ -134,6 +152,7 @@ export const createBaseClient = <
         isEnabled: (key, context = {}) =>
             internalEvaluate(key, context, false).value === true,
         reload,
+        identify,
         waitForInitialization,
         close: async () => {
             events.stop();

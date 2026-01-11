@@ -61,6 +61,10 @@ export const initFlagControl = <
   return {
     ...baseClient,
     reload,
+    identify: async (context: EvaluationContext) => {
+      await baseClient.identify(context);
+      notifyListeners();
+    },
     subscribe,
   };
 };

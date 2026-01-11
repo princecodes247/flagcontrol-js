@@ -105,6 +105,11 @@ export const initFlagControl = <
     waitForInitialization: baseClient.waitForInitialization,
     evaluate,
     reload,
+    identify: async (context: EvaluationContext) => {
+      globalContext = context;
+      await baseClient.identify(context);
+      notifyAll();
+    },
     get: (key, context = {}, fallback) =>
       evaluate(key, context, fallback).value,
     isEnabled: (key, context = {}) =>

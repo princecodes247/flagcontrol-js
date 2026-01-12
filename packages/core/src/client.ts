@@ -1,5 +1,6 @@
 import {
     Evaluator,
+    ListKeys,
     createEventManager,
     createLoader,
     createStore,
@@ -27,7 +28,7 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
     reload: () => Promise<void>;
     identify: (context: EvaluationContext) => Promise<void>;
     addToList: (
-        listKey: string,
+        listKey: ListKeys,
         users:
             | { key: string;[attrs: string]: any }
             | Array<{ key: string;[attrs: string]: any }>

@@ -129,8 +129,10 @@ export type InferFlags<T extends readonly { key: string; type: 'boolean' | 'stri
  *   }
  * }
  */
-export interface FlagControlRegister {
+export interface FlagControlProperties {
   // flags: AppFlags
+  // contextAttributes: "" | ({} & string);
+  // listKeys: "" | ({} & string);
 }
 
 export type AnyFlags = Record<string, any>;
@@ -138,7 +140,7 @@ export type AnyFlags = Record<string, any>;
 /**
  * Helper to extract flags from the registry or fallback to AnyFlags.
  */
-export type RegisteredFlags = FlagControlRegister extends { flags: infer F }
+export type RegisteredFlags = FlagControlProperties extends { flags: infer F }
   ? F
   : AnyFlags;
 
@@ -146,8 +148,8 @@ export type RegisteredFlags = FlagControlRegister extends { flags: infer F }
 
 export type BaseEvaluationContext<T extends object = Record<string, unknown>> = Record<string, unknown> & T;
 
+export type EvaluationContext = BaseEvaluationContext<{
+  [key in FlagControlProperties extends { contextAttributes: infer C } ? C : ({} & string)]?: string | number | boolean | Record<string, unknown>;
+}>;
 
-export interface FlagControlEvaluationContext {
-
-}
-export type EvaluationContext = BaseEvaluationContext<FlagControlEvaluationContext>;
+export type ListKeys = FlagControlProperties extends { listKeys: infer L } ? L : ({} & string);

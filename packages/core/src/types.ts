@@ -106,6 +106,7 @@ export type DefinitionsResponse = {
 export type BootstrapResponse = {
   types: FlagManifest[];
   lists: string[];
+  contextAttributes: string[];
 }
 
 
@@ -147,7 +148,6 @@ export type BaseEvaluationContext<T extends object = Record<string, unknown>> = 
 
 
 export interface FlagControlEvaluationContext {
-  id?: string;
-  email?: string;
+
 }
 export type EvaluationContext = BaseEvaluationContext<FlagControlEvaluationContext>;

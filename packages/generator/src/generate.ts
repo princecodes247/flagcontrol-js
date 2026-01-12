@@ -12,12 +12,15 @@ export async function generateTypes(
 
     try {
         let flags: FlagManifest[] = [];
+        let contextAttributes: string[] = [];
         if (preloadedFlags) {
             flags = preloadedFlags;
         } else {
             const loader = createLoader(config);
             const bootstrap = await loader.getBootstrap();
             flags = bootstrap.types;
+            contextAttributes = bootstrap.contextAttributes;
+
         }
         console.log({ flags, rules: flags?.map((flag) => flag.rules), defaults: flags?.map((flag) => flag.defaults) });
         console.log(`Found ${flags?.length ?? 0} flags. Generating types...`);
@@ -107,6 +110,14 @@ export async function generateTypes(
         lines.push("  interface FlagControlRegister {");
         lines.push("    flags: FlagControlAppFlags;");
         lines.push("  }");
+        lines.push("");
+        lines.push("  interface FlagControlEvaluationContext {");
+        for (const attr of contextAttributes) {
+            lines.push(`  "${attr}"?: string;`);
+        }
+        lines.push("};");
+        lines.push("");
+
         lines.push("}");
         lines.push("");
 

@@ -1,5 +1,11 @@
 # @flagcontrol/core
 
+## 0.2.1
+
+### Patch Changes
+
+- d6784eb: add initial context support for react sdk
+
 ## 0.2.0
 
 ### Minor Changes

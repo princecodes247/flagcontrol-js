@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-    title: "FlagControl SDKs",
-    description: "Official documentation for FlagControl SDKs",
+    title: "FlagControl",
+    description: "Official documentation for FlagControl",
 
     themeConfig: {
         nav: [
@@ -50,7 +50,7 @@ export default defineConfig({
 
         footer: {
             message: 'Released under the MIT License.',
-            copyright: 'Copyright © 2024 FlagControl'
+            copyright: 'Copyright © 2026 FlagControl'
         }
     }
 })

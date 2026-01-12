@@ -25,9 +25,10 @@ export const initFlagControl = <
   F extends Record<string, any> = RegisteredFlags,
 >(
   config: FlagControlConfig,
-  offlineFlags: readonly Flag[] = []
+  offlineFlags: readonly Flag[] = [],
+  context?: EvaluationContext
 ): FlagControlClient<F> => {
-  const baseClient = createBaseClient<F>({ ...config, evaluationMode: 'remote' }, offlineFlags);
+  const baseClient = createBaseClient<F>({ ...config, evaluationMode: 'remote' }, offlineFlags, context);
   const listeners = new Set<() => void>();
 
   const subscribe = (listener: () => void) => {
@@ -80,8 +81,9 @@ export function createFlagControlClient<
   F extends AnyFlags = RegisteredFlags,
 >(
   config: FlagControlConfig,
-  offlineFlags: readonly Flag[] = []
+  offlineFlags: readonly Flag[] = [],
+  context?: EvaluationContext
 ): FlagControlClient<F> {
-  const client = initFlagControl(config, offlineFlags);
+  const client = initFlagControl(config, offlineFlags, context);
   return client as FlagControlClient<F>;
 }

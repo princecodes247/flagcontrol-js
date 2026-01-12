@@ -57,9 +57,13 @@ export const createBaseClient = <
     F extends Record<string, any> = RegisteredFlags,
 >(
     config: FlagControlConfig,
-    offlineFlags: readonly Flag[] = []
+    offlineFlags: readonly Flag[] = [],
+    initialContext?: EvaluationContext
 ): BaseClient<F> => {
     const store = createStore(offlineFlags);
+    if (initialContext) {
+        store.context.set(initialContext);
+    }
     const loader = createLoader(config);
     const events = createEventManager(config, loader, store);
     const telemetry = createTelemetryManager(config);
@@ -83,7 +87,7 @@ export const createBaseClient = <
     // Initial load
     const initPromise = (async () => {
         try {
-            const flags = await fetchFlags();
+            const flags = await fetchFlags(initialContext);
 
             store.set(flags);
             status = "ready";

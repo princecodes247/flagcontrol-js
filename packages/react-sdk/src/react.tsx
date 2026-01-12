@@ -7,25 +7,34 @@ const FlagControlContext = createContext<FlagControlClient | null>(null);
 export interface FlagProviderProps {
     config: FlagControlConfig;
     offlineFlags?: readonly Flag[];
+    context?: EvaluationContext;
     children: React.ReactNode;
 }
 
 export const FlagProvider: React.FC<FlagProviderProps> = ({
     config,
     offlineFlags,
+    context,
     children,
 }) => {
     const [client, setClient] = useState<FlagControlClient | null>(null);
 
     useEffect(() => {
         // Initialize the client
-        const newClient = initFlagControl(config, offlineFlags);
+        const newClient = initFlagControl(config, offlineFlags, context);
         setClient(newClient);
 
         return () => {
             newClient.close();
         };
     }, [config.sdkKey]); // Re-init if SDK key changes (or other critical config)
+
+    // Handle context updates
+    useEffect(() => {
+        if (client && context) {
+            client.identify(context);
+        }
+    }, [client, JSON.stringify(context)]);
 
     if (!client) {
         return null; // Or a loading spinner?

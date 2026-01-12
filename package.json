@@ -9,13 +9,18 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "docs:build": "vitepress build docs",
+    "docs:serve": "vitepress serve docs",
+    "docs:dev": "vitepress dev docs"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
     "@changesets/cli": "^2.29.8",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitepress": "^1.6.4",
+    "vitest": "^1.0.0",
+    "vue": "^3.5.26"
   }
 }

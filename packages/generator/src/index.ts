@@ -8,11 +8,11 @@ dotenv.config();
 const args = minimist(process.argv.slice(2));
 const outputPath = args.o || args.output || "./src/flagcontrol.d.ts";
 
-const sdkKey = process.env.FLAGCONTROL_SDK_KEY;
-const apiBaseUrl = process.env.FLAGCONTROL_API_URL;
+const sdkKey = args.key || process.env.FLAGCONTROL_SDK_KEY;
+const apiBaseUrl = args.apiBaseUrl || process.env.FLAGCONTROL_API_URL;
 
 if (!sdkKey) {
-    console.error("Error: FLAGCONTROL_SDK_KEY environment variable is required.");
+    console.error("FLAGCONTROL_SDK_KEY environment variable or --key argument is required.");
     process.exit(1);
 }
 

@@ -111,7 +111,7 @@ export async function generateTypes(
         lines.push("  interface FlagControlProperties {");
         lines.push("    flags: FlagControlAppFlags;");
         lines.push(`    contextAttributes: ${contextAttributes.map((attr) => `"${attr}"`).join(" | ")} | ({} & string); `);
-        lines.push(`    listKeys: ${lists.join(" | ")} | ({} & string); `);
+        lines.push(`    listKeys: ${lists.map((list) => `"${list}"`).join(" | ")} | ({} & string); `);
         lines.push("  }");
         lines.push("}");
         lines.push("");

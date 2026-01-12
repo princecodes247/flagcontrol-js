@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "dev": "node --experimental-strip-types --watch src/index.ts",
     "build": "tsc",
     "generate": "npx flagcontrol generate"
   },

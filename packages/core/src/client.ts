@@ -66,11 +66,22 @@ export const createBaseClient = <
 
     let status: ClientStatus = "loading";
 
+    const fetchFlags = async (context?: EvaluationContext): Promise<Flag[]> => {
+        if (config.evaluationMode === 'remote') {
+            return loader.getFlags(context);
+        } else {
+            const definitions = await loader.getFlagDefinitions();
+            return definitions.flags.map(f => ({
+                ...f,
+            } as unknown as Flag));
+        }
+    };
+
     // Initial load
     const initPromise = (async () => {
         try {
-            const flags = await loader.getFlags();
-            console.log({ flags })
+            const flags = await fetchFlags();
+
             store.set(flags);
             status = "ready";
             config.onFlagsUpdated?.();
@@ -91,7 +102,6 @@ export const createBaseClient = <
         callsiteFallback?: any
     ) => {
         const flag = store.get(key);
-        console.log({ flag })
         // Determine the result
         let result: any;
         let source: "remote" | "fallback" | "default" = "remote";
@@ -101,10 +111,16 @@ export const createBaseClient = <
             source = "fallback";
         } else {
             try {
-                result =
-                    // evaluator.evaluate(flag, context) ??
-                    flag.value ??
-                    callsiteFallback;
+                if (config.evaluationMode === 'remote') {
+                    // In remote mode, the flag value is already evaluated
+                    result = flag.value ?? flag.defaultValue ?? callsiteFallback;
+                } else {
+                    // In local mode, evaluate using the evaluator
+                    result =
+                        evaluator.evaluate(flag, context) ??
+                        flag.defaultValue ??
+                        callsiteFallback;
+                }
             } catch (error) {
                 config.onError?.(error as Error);
                 result = flag.defaultValue ?? callsiteFallback;
@@ -125,25 +141,29 @@ export const createBaseClient = <
     const identify = async (context: EvaluationContext): Promise<void> => {
         await waitForInitialization();
         store.context.set(context);
-        status = "loading";
-        try {
-            const flags = await loader.getFlags(context);
-            console.log({ from_identify: flags })
 
-            store.set(flags);
+        if (config.evaluationMode === 'remote') {
+            status = "loading";
+            try {
+                const flags = await fetchFlags(context);
+                store.set(flags);
+                config.onFlagsUpdated?.();
+                status = "ready";
+            } catch (error) {
+                config.onError?.(error as Error);
+                status = "error";
+                throw error;
+            }
+        } else {
+            // Local mode: just notify, context is already set
             config.onFlagsUpdated?.();
-            status = "ready";
-        } catch (error) {
-            config.onError?.(error as Error);
-            status = "error";
-            throw error;
         }
     };
 
     const reload = async (): Promise<void> => {
         status = "loading";
         try {
-            const flags = await loader.getFlags(store.context.get());
+            const flags = await fetchFlags(store.context.get());
             store.set(flags);
             config.onFlagsUpdated?.();
             status = "ready";

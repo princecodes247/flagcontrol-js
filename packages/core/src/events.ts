@@ -49,7 +49,16 @@ export const createEventManager = (
       if (signal.aborted) return;
 
       try {
-        const flags = await loader.getFlags(store.context.get(), signal);
+        let flags: Flag[] = [];
+        if (config.evaluationMode === 'remote') {
+          flags = await loader.getFlags(store.context.get(), signal);
+        } else {
+          const definitions = await loader.getFlagDefinitions(signal);
+          flags = definitions.flags.map(f => ({
+            ...f,
+          } as unknown as Flag));
+        }
+
         if (!signal.aborted) {
           store.set(flags);
           config.onFlagsUpdated?.();

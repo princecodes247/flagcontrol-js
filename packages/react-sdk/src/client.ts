@@ -27,7 +27,7 @@ export const initFlagControl = <
   config: FlagControlConfig,
   offlineFlags: readonly Flag[] = []
 ): FlagControlClient<F> => {
-  const baseClient = createBaseClient<F>(config, offlineFlags);
+  const baseClient = createBaseClient<F>({ ...config, evaluationMode: 'remote' }, offlineFlags);
   const listeners = new Set<() => void>();
 
   const subscribe = (listener: () => void) => {

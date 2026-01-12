@@ -62,3 +62,20 @@ To run the frontend example:
 ```bash
 npm run dev -w examples/frontend
 ```
+
+
+
+### Building Packages Individually
+
+```bash
+npm run build -w packages/core
+```
+```bash
+npm run build -w packages/node-sdk
+```
+```bash
+npm run build -w packages/react-sdk
+```
+```bash
+npm run build -w packages/generator
+```

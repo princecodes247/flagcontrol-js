@@ -7,13 +7,20 @@ export type Operator =
   | "lt"
   | "gte"
   | "lte"
-  | "oneOf"
-  | "notOneOf";
+  | "in_list"
+  | "not_in_list";
+
+
 
 export interface Rule {
-  attribute: string;
-  operator: Operator;
-  value: string | number | boolean | readonly (string | number | boolean)[];
+  conditions: readonly {
+    attribute: string;
+    operator: Operator;
+    value: string | number | boolean | readonly (string | number | boolean)[];
+  }[];
+  result: FlagValue;
+  enabled: boolean;
+  priority: number;
 }
 
 export interface Variant {
@@ -52,6 +59,7 @@ export type Flag = {
   defaultVariantId?: string;
   variants?: readonly Variant[];
   targets?: readonly Target[];
+  rules?: readonly Rule[];
   lists?: readonly string[];
 } & FlagTypeValue;
 
@@ -67,6 +75,7 @@ export interface FlagControlConfig {
   telemetryIntervalMs?: number;
   disableTelemetry?: boolean;
   telemetrySampleRate?: number;
+  evaluationMode?: 'local' | 'remote';
 }
 
 export interface TelemetryEvent {
@@ -84,6 +93,20 @@ export type FlagManifest = {
   variants: string[] | number[] | boolean[] | Record<string, unknown>[] | undefined,
   rules: string[] | number[] | boolean[] | Record<string, unknown>[] | undefined,
 }
+
+export type DefinitionsResponse = {
+  flags: FlagManifest[];
+  lists: {
+    key: string;
+    members: string[];
+  }[];
+}
+
+export type BootstrapResponse = {
+  types: FlagManifest[];
+  lists: string[];
+}
+
 
 // export type InferFlags<T extends readonly { key: string; variants: readonly { value: unknown }[] }[]> = {
 //   [F in T[number] as F["key"]]: F["variants"][number]["value"];
@@ -120,6 +143,7 @@ export type RegisteredFlags = FlagControlRegister extends { flags: infer F }
 
 
 export type BaseEvaluationContext<T extends object = {}> = {
+  userId?: string;
   attributes?: Record<string, unknown>;
 } & T;
 

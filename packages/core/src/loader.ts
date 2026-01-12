@@ -3,17 +3,19 @@ import type {
   FlagManifest,
   FlagControlConfig,
   EvaluationContext,
+  BootstrapResponse,
+  DefinitionsResponse,
 } from "./types";
 
-export type BootstrapResponse = {
-  types: FlagManifest[];
-}
 
 export type Loader = {
   getFlags: (
     context?: EvaluationContext,
     signal?: AbortSignal
   ) => Promise<Flag[]>;
+  getFlagDefinitions: (
+    signal?: AbortSignal
+  ) => Promise<DefinitionsResponse>;
   getBootstrap: (signal?: AbortSignal) => Promise<BootstrapResponse>;
   addToList: (
     listKey: string,
@@ -34,7 +36,6 @@ export const createLoader = (config: FlagControlConfig): Loader => {
     ): Promise<Flag[]> => {
       const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
       let url = `${baseUrl}/sdk/flags/evaluate/all`;
-      console.log({ url, repla: config.apiBaseUrl })
       const fetchImpl = config.fetch || global.fetch;
 
       if (!fetchImpl) {
@@ -61,9 +62,50 @@ export const createLoader = (config: FlagControlConfig): Loader => {
         }
 
         const data = (await response.json()) as { flags: Flag[] };
+
         return data.flags;
       } catch (error) {
-        console.log({ error })
+        if (error instanceof Error && error.name === "AbortError") {
+          throw error;
+        }
+        throw new Error(
+          `Network error fetching flags: ${error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    },
+    getFlagDefinitions: async (
+      signal?: AbortSignal
+    ) => {
+      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
+      const url = `${baseUrl}/sdk/definitions`;
+      const fetchImpl = config.fetch || global.fetch;
+
+      if (!fetchImpl) {
+        throw new Error(
+          "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
+        );
+      }
+
+      try {
+        const response = await fetchImpl(url, {
+          method: "GET",
+          headers: {
+            "X-FlagControl-SDK-Key": config.sdkKey,
+            "Content-Type": "application/json",
+          },
+          signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch flags: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = (await response.json()) as DefinitionsResponse;
+        return data;
+      } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           throw error;
         }

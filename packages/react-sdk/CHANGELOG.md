@@ -1,5 +1,11 @@
 # @flagcontrol/react
 
+## 0.2.1
+
+### Patch Changes
+
+- f8ee023: bump up core dep
+
 ## 0.2.0
 
 ### Minor Changes

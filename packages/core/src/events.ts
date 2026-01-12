@@ -49,7 +49,7 @@ export const createEventManager = (
       if (signal.aborted) return;
 
       try {
-        const flags = await loader.getFlags(undefined, signal);
+        const flags = await loader.getFlags(store.context.get(), signal);
         if (!signal.aborted) {
           store.set(flags);
           config.onFlagsUpdated?.();

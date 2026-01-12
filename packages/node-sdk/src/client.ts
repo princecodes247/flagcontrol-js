@@ -110,6 +110,7 @@ export const initFlagControl = <
       await baseClient.identify(context);
       notifyAll();
     },
+    addToList: baseClient.addToList,
     get: (key, context = {}, fallback) =>
       evaluate(key, context, fallback).value,
     isEnabled: (key, context = {}) =>

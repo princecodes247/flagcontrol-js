@@ -26,6 +26,12 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
     ) => F[K] | undefined;
     reload: () => Promise<void>;
     identify: (context: EvaluationContext) => Promise<void>;
+    addToList: (
+        listKey: string,
+        users:
+            | { key: string;[attrs: string]: any }
+            | Array<{ key: string;[attrs: string]: any }>
+    ) => Promise<any>;
     isEnabled: <K extends keyof F & string>(
         key: K,
         context?: EvaluationContext
@@ -64,6 +70,7 @@ export const createBaseClient = <
     const initPromise = (async () => {
         try {
             const flags = await loader.getFlags();
+            console.log({ flags })
             store.set(flags);
             status = "ready";
             config.onFlagsUpdated?.();
@@ -84,7 +91,7 @@ export const createBaseClient = <
         callsiteFallback?: any
     ) => {
         const flag = store.get(key);
-
+        console.log({ flag })
         // Determine the result
         let result: any;
         let source: "remote" | "fallback" | "default" = "remote";
@@ -95,8 +102,8 @@ export const createBaseClient = <
         } else {
             try {
                 result =
-                    evaluator.evaluate(flag, context) ??
-                    flag.defaultValue ??
+                    // evaluator.evaluate(flag, context) ??
+                    flag.value ??
                     callsiteFallback;
             } catch (error) {
                 config.onError?.(error as Error);
@@ -115,13 +122,14 @@ export const createBaseClient = <
         return { value: result, source };
     };
 
-    let lastContext: EvaluationContext | undefined;
-
     const identify = async (context: EvaluationContext): Promise<void> => {
-        lastContext = context;
+        await waitForInitialization();
+        store.context.set(context);
         status = "loading";
         try {
             const flags = await loader.getFlags(context);
+            console.log({ from_identify: flags })
+
             store.set(flags);
             config.onFlagsUpdated?.();
             status = "ready";
@@ -135,7 +143,7 @@ export const createBaseClient = <
     const reload = async (): Promise<void> => {
         status = "loading";
         try {
-            const flags = await loader.getFlags(lastContext);
+            const flags = await loader.getFlags(store.context.get());
             store.set(flags);
             config.onFlagsUpdated?.();
             status = "ready";
@@ -153,6 +161,7 @@ export const createBaseClient = <
             internalEvaluate(key, context, false).value === true,
         reload,
         identify,
+        addToList: (listKey, users) => loader.addToList(listKey, users),
         waitForInitialization,
         close: async () => {
             events.stop();

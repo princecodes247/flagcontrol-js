@@ -16,7 +16,8 @@ export async function generateTypes(
             flags = preloadedFlags;
         } else {
             const loader = createLoader(config);
-            flags = await loader.getManifest();
+            const bootstrap = await loader.getBootstrap();
+            flags = bootstrap.types;
         }
         console.log({ flags, rules: flags?.map((flag) => flag.rules), defaults: flags?.map((flag) => flag.defaults) });
         console.log(`Found ${flags?.length ?? 0} flags. Generating types...`);

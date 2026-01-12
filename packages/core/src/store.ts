@@ -1,14 +1,19 @@
-import type { Flag } from "./types";
+import type { EvaluationContext, Flag } from "./types";
 
 export type FlagStore = {
   get: (key: string) => Flag | undefined;
   getAll: () => Flag[];
   set: (flags: readonly Flag[]) => void;
   replace: (flags: readonly Flag[]) => void;
+  context: {
+    get: () => EvaluationContext;
+    set: (context: EvaluationContext) => void;
+  }
 };
 
 export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
   let flags = new Map(initialFlags.map((f) => [f.key, f]));
+  let context: EvaluationContext = {};
 
   return {
     get: (key: string) => flags.get(key),
@@ -21,5 +26,11 @@ export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
         flags.set(flag.key, flag);
       }
     },
+    context: {
+      get: () => context,
+      set: (newContext: EvaluationContext) => {
+        context = newContext;
+      },
+    }
   };
 };

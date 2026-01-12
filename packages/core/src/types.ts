@@ -1,10 +1,5 @@
 export type FlagValue = boolean | string | number | Record<string, unknown>;
 
-export interface EvaluationContext {
-  userId?: string;
-  attributes?: Record<string, string | number | boolean>;
-}
-
 export type Operator =
   | "equals"
   | "contains"
@@ -36,24 +31,28 @@ export interface Target {
 
 export type FlagTypeValue = {
   type: 'boolean'
+  value?: boolean
   defaultValue: boolean
 } | {
   type: 'string'
+  value?: string
   defaultValue: string
 } | {
   type: 'number'
+  value?: number
   defaultValue: number
 } | {
   type: 'object'
+  value?: Record<string, unknown>
   defaultValue: Record<string, unknown>
 }
 
 export type Flag = {
   key: string;
-  // TODO: future versions will support more complex default values
   defaultVariantId?: string;
   variants?: readonly Variant[];
   targets?: readonly Target[];
+  lists?: readonly string[];
 } & FlagTypeValue;
 
 export interface FlagControlConfig {
@@ -117,3 +116,15 @@ export type AnyFlags = Record<string, any>;
 export type RegisteredFlags = FlagControlRegister extends { flags: infer F }
   ? F
   : AnyFlags;
+
+
+
+export type BaseEvaluationContext<T extends object = {}> = {
+  attributes?: Record<string, unknown>;
+} & T;
+
+
+export interface FlagControlEvaluationContext {
+
+}
+export type EvaluationContext = BaseEvaluationContext<FlagControlEvaluationContext>;

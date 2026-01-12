@@ -1,5 +1,11 @@
 # flagcontrol
 
+## 0.2.2
+
+### Patch Changes
+
+- 8903e53: add key arg and fix list keys unresolved type
+
 ## 0.2.1
 
 ### Patch Changes

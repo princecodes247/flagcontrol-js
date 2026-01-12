@@ -62,7 +62,7 @@ export const createBaseClient = <
     const loader = createLoader(config);
     const events = createEventManager(config, loader, store);
     const telemetry = createTelemetryManager(config);
-    const evaluator = new Evaluator();
+    const evaluator = new Evaluator(store);
 
     let status: ClientStatus = "loading";
 
@@ -71,6 +71,8 @@ export const createBaseClient = <
             return loader.getFlags(context);
         } else {
             const definitions = await loader.getFlagDefinitions();
+            store.lists.setAll(definitions.lists);
+            store.salt.set(definitions.salt);
             return definitions.flags.map(f => ({
                 ...f,
             } as unknown as Flag));

@@ -7,11 +7,14 @@ import type {
   Target,
   Variant,
 } from "./types";
+import type { FlagStore } from "./store";
 import { getBucket } from "./utils/hashing";
+import crypto from 'crypto';
 
 export class Evaluator {
+  constructor(private store: FlagStore) { }
+
   evaluate(flag: Flag, context: EvaluationContext): FlagValue {
-    console.log({ flag })
     // 1. Check rules
     if (flag.rules) {
       for (const rule of flag.rules) {
@@ -41,10 +44,7 @@ export class Evaluator {
   }
 
   private matchesCondition(condition: { attribute: string; operator: Operator; value: any }, context: EvaluationContext): boolean {
-    const attributeValue =
-      condition.attribute === "id"
-        ? context.userId
-        : context.attributes?.[condition.attribute];
+    const attributeValue = context?.[condition?.attribute];
 
     // If attribute is missing, condition fails
     if (attributeValue === undefined) {
@@ -84,16 +84,31 @@ export class Evaluator {
           typeof condition.value === "number" &&
           attributeValue <= condition.value
         );
-      case "in_list":
-        return (
-          Array.isArray(condition.value) &&
-          condition.value.includes(attributeValue as string | number | boolean)
-        );
-      case "not_in_list":
-        return (
-          Array.isArray(condition.value) &&
-          !condition.value.includes(attributeValue as string | number | boolean)
-        );
+      case "in_list": {
+        const listKey = condition.value as string;
+        const listMembers = this.store.lists.get(listKey);
+        if (!attributeValue) return false;
+        if (!listMembers) return false;
+
+        const salt = this.store.salt.get();
+        if (!salt) return false; // Cannot verify without salt
+
+        const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')
+
+        return listMembers.includes(hashedValue);
+      }
+      case "not_in_list": {
+        const listKey = condition.value as string;
+        if (!attributeValue) return true;
+        const listMembers = this.store.lists.get(listKey);
+        if (!listMembers) return true;
+
+        const salt = this.store.salt.get();
+        if (!salt) return true; // Cannot verify
+
+        const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')
+        return !listMembers.includes(hashedValue);
+      }
       default:
         return false;
     }

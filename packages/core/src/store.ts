@@ -8,12 +8,22 @@ export type FlagStore = {
   context: {
     get: () => EvaluationContext;
     set: (context: EvaluationContext) => void;
-  }
+  };
+  lists: {
+    get: (key: string) => string[] | undefined;
+    setAll: (lists: { key: string; members: string[] }[]) => void;
+  };
+  salt: {
+    get: () => string | undefined;
+    set: (salt: string) => void;
+  };
 };
 
 export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
   let flags = new Map(initialFlags.map((f) => [f.key, f]));
   let context: EvaluationContext = {};
+  let listMap = new Map<string, string[]>();
+  let projectSalt: string | undefined;
 
   return {
     get: (key: string) => flags.get(key),
@@ -31,6 +41,18 @@ export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
       set: (newContext: EvaluationContext) => {
         context = newContext;
       },
-    }
+    },
+    lists: {
+      get: (key: string) => listMap.get(key),
+      setAll: (lists: { key: string; members: string[] }[]) => {
+        listMap = new Map(lists.map((l) => [l.key, l.members]));
+      },
+    },
+    salt: {
+      get: () => projectSalt,
+      set: (salt: string) => {
+        projectSalt = salt;
+      },
+    },
   };
 };

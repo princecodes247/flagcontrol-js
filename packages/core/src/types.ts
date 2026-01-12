@@ -100,6 +100,7 @@ export type DefinitionsResponse = {
     key: string;
     members: string[];
   }[];
+  salt: string;
 }
 
 export type BootstrapResponse = {
@@ -142,13 +143,11 @@ export type RegisteredFlags = FlagControlRegister extends { flags: infer F }
 
 
 
-export type BaseEvaluationContext<T extends object = {}> = {
-  userId?: string;
-  attributes?: Record<string, unknown>;
-} & T;
+export type BaseEvaluationContext<T extends object = Record<string, unknown>> = Record<string, unknown> & T;
 
 
 export interface FlagControlEvaluationContext {
-
+  id?: string;
+  email?: string;
 }
 export type EvaluationContext = BaseEvaluationContext<FlagControlEvaluationContext>;

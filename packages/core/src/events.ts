@@ -54,6 +54,8 @@ export const createEventManager = (
           flags = await loader.getFlags(store.context.get(), signal);
         } else {
           const definitions = await loader.getFlagDefinitions(signal);
+          store.lists.setAll(definitions.lists);
+          store.salt.set(definitions.salt);
           flags = definitions.flags.map(f => ({
             ...f,
           } as unknown as Flag));

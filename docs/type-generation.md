@@ -13,7 +13,7 @@ npm install -D flagcontrol
 2. Run the generator.
 
 ```bash
-npx flagcontrol --sdkKey YOUR_SDK_KEY --output ./src/flagcontrol.d.ts
+npx flagcontrol --key YOUR_SDK_KEY --output ./src/flagcontrol.d.ts
 ```
 
 Or use environment variables:

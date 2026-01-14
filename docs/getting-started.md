@@ -7,13 +7,13 @@ Install the core package and the SDK for your platform.
 ### Node.js
 
 ```bash
-npm install @flagcontrol/node @flagcontrol/core
+npm install @flagcontrol/node
 ```
 
 ### React
 
 ```bash
-npm install @flagcontrol/react @flagcontrol/core
+npm install @flagcontrol/react
 ```
 
 ## Quick Start
@@ -26,8 +26,6 @@ import { createFlagControlClient } from '@flagcontrol/node';
 const client = createFlagControlClient({
   sdkKey: 'YOUR_SDK_KEY',
 });
-
-await client.waitForInitialization();
 
 const isEnabled = client.isEnabled('new-feature');
 ```

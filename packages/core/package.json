@@ -1,7 +1,19 @@
 {
   "name": "@flagcontrol/core",
   "version": "0.2.3",
+  "description": "Core SDK for FlagControl feature flag management",
   "license": "MIT",
+  "keywords": [
+    "feature",
+    "flag",
+    "toggle",
+    "feature-flag",
+    "feature-toggle",
+    "flagcontrol",
+    "ab-testing",
+    "experimentation",
+    "remote-config"
+  ],
   "publishConfig": {
     "access": "public"
   },

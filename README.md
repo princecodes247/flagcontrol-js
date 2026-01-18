@@ -79,3 +79,10 @@ npm run build -w packages/react-sdk
 ```bash
 npm run build -w packages/generator
 ```
+
+### Publishing
+
+```bash
+npx changeset
+npm run publish
+```

@@ -12,7 +12,7 @@ import type {
 // Types
 // ============================================================================
 
-export type UserEntry = { key: string; [attrs: string]: any };
+export type UserEntry = { key: string; metadata?: any };
 
 export type ListInfo = {
   key: string;

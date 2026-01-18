@@ -11,27 +11,34 @@ export type EventManager = {
 
 /**
  * Apply a list of changes to the store.
- * Returns true if any changes were applied.
+ * Returns 'resync' if a full resync is required, true if changes were applied, false otherwise.
  */
-const applyChanges = (store: FlagStore, changes: Change[]): boolean => {
+const applyChanges = (store: FlagStore, changes: Change[]): boolean | 'resync' => {
   if (changes.length === 0) return false;
 
   for (const change of changes) {
     switch (change.type) {
+      case 'flag.created':
       case 'flag.updated':
-        // Convert FlagManifest to Flag and update store
+        // Convert FlagManifest to Flag and upsert in store
         store.set([change.data as unknown as Flag]);
         break;
       case 'flag.deleted':
+      case 'flag.archived':
+        // Both deleted and archived flags should be removed from the store
         store.delete(change.flagKey);
         break;
+      case 'list.created':
       case 'list.updated':
-        // Replace or create the list with new data
+        // Upsert the list with new data
         store.lists.create(change.data);
         break;
       case 'list.deleted':
         store.lists.delete(change.listKey);
         break;
+      case 'resync.required':
+        // Signal that a full resync is needed
+        return 'resync';
     }
   }
 
@@ -106,6 +113,29 @@ export const createEventManager = (
   };
 
   /**
+   * Perform a full resync by fetching all definitions.
+   */
+  const performFullResync = async (signal?: AbortSignal): Promise<void> => {
+    let flags: Flag[] = [];
+    
+    if (config.evaluationMode === 'remote') {
+      flags = await loader.getFlags(store.context.get(), signal);
+    } else {
+      const definitions = await loader.getFlagDefinitions(signal);
+      store.lists.replace(definitions.lists);
+      store.cursor.set(definitions.cursor);
+      flags = definitions.flags.map(f => ({
+        ...f,
+      } as unknown as Flag));
+    }
+
+    if (!signal?.aborted) {
+      store.replace(flags);
+      config.onFlagsUpdated?.();
+    }
+  };
+
+  /**
    * Fetch and apply changes from the server.
    * Uses incremental changes if cursor exists, otherwise does a full fetch.
    */
@@ -122,34 +152,25 @@ export const createEventManager = (
         
         if (signal?.aborted) return;
 
-        const hasChanges = applyChanges(store, response.changes);
+        const result = applyChanges(store, response.changes);
+        
+        // If resync is required, do a full fetch and exit
+        if (result === 'resync') {
+          await performFullResync(signal);
+          return;
+        }
+
         store.cursor.set(response.cursor);
         cursor = response.cursor;
         hasMore = response.hasMore;
 
-        if (hasChanges) {
+        if (result) {
           config.onFlagsUpdated?.();
         }
       }
     } else {
       // Full fetch (initial load or remote mode)
-      let flags: Flag[] = [];
-      
-      if (config.evaluationMode === 'remote') {
-        flags = await loader.getFlags(store.context.get(), signal);
-      } else {
-        const definitions = await loader.getFlagDefinitions(signal);
-        store.lists.replace(definitions.lists);
-        store.cursor.set(definitions.cursor);
-        flags = definitions.flags.map(f => ({
-          ...f,
-        } as unknown as Flag));
-      }
-
-      if (!signal?.aborted) {
-        store.set(flags);
-        config.onFlagsUpdated?.();
-      }
+      await performFullResync(signal);
     }
   };
 
@@ -269,10 +290,16 @@ export const createEventManager = (
 
             // Handle change events from stream
             if (data.cursor && Array.isArray(data.changes)) {
-              const hasChanges = applyChanges(store, data.changes as Change[]);
-              store.cursor.set(data.cursor);
-              if (hasChanges) {
-                config.onFlagsUpdated?.();
+              const result = applyChanges(store, data.changes as Change[]);
+              
+              // If resync is required, do a full fetch
+              if (result === 'resync') {
+                await performFullResync(signal);
+              } else {
+                store.cursor.set(data.cursor);
+                if (result) {
+                  config.onFlagsUpdated?.();
+                }
               }
             } else if (data && Array.isArray(data.flags)) {
               // Legacy full flags response

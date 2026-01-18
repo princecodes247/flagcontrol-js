@@ -108,6 +108,14 @@ export type DefinitionsResponse = {
 // Changes API Types
 // ============================================================================
 
+export type FlagCreatedChange = {
+  type: 'flag.created';
+  flagKey: string;
+  version: number;
+  data: FlagManifest;
+  timestamp: string;
+};
+
 export type FlagUpdatedChange = {
   type: 'flag.updated';
   flagKey: string;
@@ -119,6 +127,23 @@ export type FlagUpdatedChange = {
 export type FlagDeletedChange = {
   type: 'flag.deleted';
   flagKey: string;
+  timestamp: string;
+};
+
+export type FlagArchivedChange = {
+  type: 'flag.archived';
+  flagKey: string;
+  timestamp: string;
+};
+
+export type ListCreatedChange = {
+  type: 'list.created';
+  listKey: string;
+  data: {
+    key: string;
+    salt: string;
+    members: string[];
+  };
   timestamp: string;
 };
 
@@ -139,7 +164,21 @@ export type ListDeletedChange = {
   timestamp: string;
 };
 
-export type Change = FlagUpdatedChange | FlagDeletedChange | ListUpdatedChange | ListDeletedChange;
+export type ResyncRequiredChange = {
+  type: 'resync.required';
+  reason?: string;
+  timestamp: string;
+};
+
+export type Change =
+  | FlagCreatedChange
+  | FlagUpdatedChange
+  | FlagDeletedChange
+  | FlagArchivedChange
+  | ListCreatedChange
+  | ListUpdatedChange
+  | ListDeletedChange
+  | ResyncRequiredChange;
 
 export type ChangesResponse = {
   cursor: string;

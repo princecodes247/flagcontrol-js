@@ -32,7 +32,7 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
     // List operations
     createList: (list: ListInfo) => Promise<ListInfo>;
     deleteList: (listKey: ListKeys) => Promise<void>;
-    addToList: (listKey: ListKeys, users: UserEntry | UserEntry[]) => Promise<any>;
+    addToList: (listKey: ListKeys, users: { key: string; metadata?: any } | { key: string; metadata?: any }[]) => Promise<any>;
     removeFromList: (listKey: ListKeys, userKeys: string | string[]) => Promise<void>;
     isEnabled: <K extends keyof F & string>(
         key: K,

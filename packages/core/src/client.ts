@@ -39,6 +39,8 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
         context?: EvaluationContext
     ) => boolean;
     waitForInitialization: () => Promise<void>;
+    /** Manually sync changes from the server */
+    syncChanges: () => Promise<void>;
     close: () => Promise<void>;
     status: () => ClientStatus;
     // Internal methods exposed for extension
@@ -78,6 +80,7 @@ export const createBaseClient = <
         } else {
             const definitions = await loader.getFlagDefinitions();
             store.lists.replace(definitions.lists);
+            store.cursor.set(definitions.cursor);
             return definitions.flags.map(f => ({
                 ...f,
             } as unknown as Flag));
@@ -210,6 +213,7 @@ export const createBaseClient = <
             // The store will be updated on the next definitions fetch
         },
         waitForInitialization,
+        syncChanges: () => events.syncChanges(),
         close: async () => {
             events.stop();
             await telemetry.stop();

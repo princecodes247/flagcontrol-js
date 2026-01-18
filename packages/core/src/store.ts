@@ -7,9 +7,14 @@ export type FlagStore = {
   getAll: () => Flag[];
   set: (flags: readonly Flag[]) => void;
   replace: (flags: readonly Flag[]) => void;
+  delete: (key: string) => void;
   context: {
     get: () => EvaluationContext;
     set: (context: EvaluationContext) => void;
+  };
+  cursor: {
+    get: () => string | null;
+    set: (cursor: string) => void;
   };
   lists: {
     // Read operations
@@ -29,6 +34,7 @@ export type FlagStore = {
 export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
   let flags = new Map(initialFlags.map((f) => [f.key, f]));
   let context: EvaluationContext = {};
+  let cursor: string | null = null;
   let listMap = new Map<string, { salt: string; members: string[] }>();
 
   return {
@@ -42,10 +48,19 @@ export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
         flags.set(flag.key, flag);
       }
     },
+    delete: (key: string) => {
+      flags.delete(key);
+    },
     context: {
       get: () => context,
       set: (newContext: EvaluationContext) => {
         context = newContext;
+      },
+    },
+    cursor: {
+      get: () => cursor,
+      set: (newCursor: string) => {
+        cursor = newCursor;
       },
     },
     lists: {

@@ -5,6 +5,7 @@ import type {
   EvaluationContext,
   BootstrapResponse,
   DefinitionsResponse,
+  ChangesResponse,
 } from "./types";
 
 // ============================================================================
@@ -23,6 +24,7 @@ export type Loader = {
   // Flag operations
   getFlags: (context?: EvaluationContext, signal?: AbortSignal) => Promise<Flag[]>;
   getFlagDefinitions: (signal?: AbortSignal) => Promise<DefinitionsResponse>;
+  getChanges: (cursor: string, signal?: AbortSignal) => Promise<ChangesResponse>;
   getBootstrap: (signal?: AbortSignal) => Promise<BootstrapResponse>;
 
   // List operations
@@ -46,6 +48,7 @@ const ROUTES = {
   // Flag routes
   evaluateAll: () => "/sdk/flags/evaluate/all",
   definitions: () => "/sdk/definitions",
+  changes: (cursor: string) => `/sdk/changes?since=${encodeURIComponent(cursor)}`,
   bootstrap: () => "/sdk/bootstrap",
 
   // List routes
@@ -156,6 +159,15 @@ export const createLoader = (config: FlagControlConfig): Loader => {
         path: ROUTES.bootstrap(),
         signal,
         errorMessage: "Failed to fetch bootstrap data",
+      });
+    },
+
+    getChanges: async (cursor: string, signal?: AbortSignal): Promise<ChangesResponse> => {
+      return request<ChangesResponse>({
+        method: "GET",
+        path: ROUTES.changes(cursor),
+        signal,
+        errorMessage: "Failed to fetch changes",
       });
     },
 

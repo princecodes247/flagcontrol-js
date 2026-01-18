@@ -95,6 +95,7 @@ export type FlagManifest = {
 }
 
 export type DefinitionsResponse = {
+  cursor: string;
   flags: FlagManifest[];
   lists: {
     key: string;
@@ -102,6 +103,49 @@ export type DefinitionsResponse = {
     members: string[];
   }[];
 }
+
+// ============================================================================
+// Changes API Types
+// ============================================================================
+
+export type FlagUpdatedChange = {
+  type: 'flag.updated';
+  flagKey: string;
+  version: number;
+  data: FlagManifest;
+  timestamp: string;
+};
+
+export type FlagDeletedChange = {
+  type: 'flag.deleted';
+  flagKey: string;
+  timestamp: string;
+};
+
+export type ListUpdatedChange = {
+  type: 'list.updated';
+  listKey: string;
+  data: {
+    key: string;
+    salt: string;
+    members: string[];
+  };
+  timestamp: string;
+};
+
+export type ListDeletedChange = {
+  type: 'list.deleted';
+  listKey: string;
+  timestamp: string;
+};
+
+export type Change = FlagUpdatedChange | FlagDeletedChange | ListUpdatedChange | ListDeletedChange;
+
+export type ChangesResponse = {
+  cursor: string;
+  hasMore: boolean;
+  changes: Change[];
+};
 
 export type BootstrapResponse = {
   types: FlagManifest[];

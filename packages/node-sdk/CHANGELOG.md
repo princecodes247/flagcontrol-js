@@ -1,5 +1,17 @@
 # @flagcontrol/node
 
+## 0.2.2
+
+### Patch Changes
+
+- c829867: add missing list handlers
+- 24c9e2c: update flagcontrol core dep
+- Updated dependencies [ac24780]
+- Updated dependencies [2698645]
+- Updated dependencies [b0f6eed]
+- Updated dependencies [5c2a6c4]
+  - @flagcontrol/core@0.2.3
+
 ## 0.2.1
 
 ### Patch Changes

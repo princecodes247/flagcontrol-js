@@ -1,5 +1,11 @@
 # @flagcontrol/core
 
+## 0.2.2
+
+### Patch Changes
+
+- f78cd0a: make salt list scoped
+
 ## 0.2.1
 
 ### Patch Changes

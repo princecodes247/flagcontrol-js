@@ -1,5 +1,7 @@
 import type { EvaluationContext, Flag } from "./types";
 
+export type ListData = { key: string; salt: string; members: string[] };
+
 export type FlagStore = {
   get: (key: string) => Flag | undefined;
   getAll: () => Flag[];
@@ -10,16 +12,24 @@ export type FlagStore = {
     set: (context: EvaluationContext) => void;
   };
   lists: {
+    // Read operations
     get: (key: string) => string[] | undefined;
-    replace: (lists: { key: string; salt: string; members: string[] }[]) => void;
+    getAll: () => ListData[];
     getSalt: (key: string) => string | undefined;
+    
+    // Write operations
+    replace: (lists: ListData[]) => void;
+    create: (list: ListData) => void;
+    delete: (key: string) => void;
+    add: (key: string, members: string[]) => void;
+    remove: (key: string, members: string[]) => void;
   };
 };
 
 export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
   let flags = new Map(initialFlags.map((f) => [f.key, f]));
   let context: EvaluationContext = {};
-  let listMap = new Map<string, {salt: string; members: string[]}>();
+  let listMap = new Map<string, { salt: string; members: string[] }>();
 
   return {
     get: (key: string) => flags.get(key),
@@ -39,11 +49,43 @@ export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
       },
     },
     lists: {
+      // Read operations
       get: (key: string) => listMap.get(key)?.members,
-      replace: (lists: { key: string; salt: string; members: string[] }[]) => {
-        listMap = new Map(lists.map((l) => [l.key, {salt: l.salt, members: l.members}]));
-      },
+      getAll: () =>
+        Array.from(listMap.entries()).map(([key, data]) => ({
+          key,
+          salt: data.salt,
+          members: data.members,
+        })),
       getSalt: (key: string) => listMap.get(key)?.salt,
+
+      // Write operations
+      replace: (lists: ListData[]) => {
+        listMap = new Map(lists.map((l) => [l.key, { salt: l.salt, members: l.members }]));
+      },
+      create: (list: ListData) => {
+        listMap.set(list.key, { salt: list.salt, members: list.members });
+      },
+      delete: (key: string) => {
+        listMap.delete(key);
+      },
+      add: (key: string, members: string[]) => {
+        const existing = listMap.get(key);
+        if (existing) {
+          const memberSet = new Set(existing.members);
+          for (const member of members) {
+            memberSet.add(member);
+          }
+          existing.members = Array.from(memberSet);
+        }
+      },
+      remove: (key: string, members: string[]) => {
+        const existing = listMap.get(key);
+        if (existing) {
+          const toRemove = new Set(members);
+          existing.members = existing.members.filter((m) => !toRemove.has(m));
+        }
+      },
     },
   };
 };

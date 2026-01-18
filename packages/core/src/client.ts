@@ -9,6 +9,8 @@ import {
     type Flag,
     type FlagControlConfig,
     type RegisteredFlags,
+    type ListInfo,
+    type UserEntry,
 } from "./index";
 
 export type ClientStatus = "loading" | "ready" | "error";
@@ -27,12 +29,11 @@ export type BaseClient<F extends Record<string, any> = RegisteredFlags> = {
     ) => F[K] | undefined;
     reload: () => Promise<void>;
     identify: (context: EvaluationContext) => Promise<void>;
-    addToList: (
-        listKey: ListKeys,
-        users:
-            | { key: string;[attrs: string]: any }
-            | Array<{ key: string;[attrs: string]: any }>
-    ) => Promise<any>;
+    // List operations
+    createList: (list: ListInfo) => Promise<ListInfo>;
+    deleteList: (listKey: ListKeys) => Promise<void>;
+    addToList: (listKey: ListKeys, users: UserEntry | UserEntry[]) => Promise<any>;
+    removeFromList: (listKey: ListKeys, userKeys: string | string[]) => Promise<void>;
     isEnabled: <K extends keyof F & string>(
         key: K,
         context?: EvaluationContext
@@ -187,7 +188,27 @@ export const createBaseClient = <
             internalEvaluate(key, context, false).value === true,
         reload,
         identify,
-        addToList: (listKey, users) => loader.addToList(listKey, users),
+        createList: async (list) => {
+            const result = await loader.createList(list);
+            // Initialize list in store with empty members (will be populated on next fetch)
+            store.lists.create({ key: list.key, salt: '', members: [] });
+            return result;
+        },
+        deleteList: async (listKey) => {
+            await loader.deleteList(listKey);
+            store.lists.delete(listKey);
+        },
+        addToList: async (listKey, users) => {
+            const result = await loader.addToList(listKey, users);
+            // Note: We can't update local store directly because members are hashed server-side
+            // The store will be updated on the next definitions fetch
+            return result;
+        },
+        removeFromList: async (listKey, userKeys) => {
+            await loader.removeFromList(listKey, userKeys);
+            // Note: We can't update local store directly because member keys are hashed
+            // The store will be updated on the next definitions fetch
+        },
         waitForInitialization,
         close: async () => {
             events.stop();

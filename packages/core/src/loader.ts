@@ -7,197 +7,207 @@ import type {
   DefinitionsResponse,
 } from "./types";
 
+// ============================================================================
+// Types
+// ============================================================================
+
+export type UserEntry = { key: string; [attrs: string]: any };
+
+export type ListInfo = {
+  key: string;
+  name: string;
+  description?: string;
+};
 
 export type Loader = {
-  getFlags: (
-    context?: EvaluationContext,
-    signal?: AbortSignal
-  ) => Promise<Flag[]>;
-  getFlagDefinitions: (
-    signal?: AbortSignal
-  ) => Promise<DefinitionsResponse>;
+  // Flag operations
+  getFlags: (context?: EvaluationContext, signal?: AbortSignal) => Promise<Flag[]>;
+  getFlagDefinitions: (signal?: AbortSignal) => Promise<DefinitionsResponse>;
   getBootstrap: (signal?: AbortSignal) => Promise<BootstrapResponse>;
-  addToList: (
-    listKey: string,
-    users:
-      | { key: string;[attrs: string]: any }
-      | Array<{ key: string;[attrs: string]: any }>,
-    signal?: AbortSignal
-  ) => Promise<any>;
+
+  // List operations
+  createList: (list: ListInfo, signal?: AbortSignal) => Promise<ListInfo>;
+  deleteList: (listKey: string, signal?: AbortSignal) => Promise<void>;
+  addToList: (listKey: string, users: UserEntry | UserEntry[], signal?: AbortSignal) => Promise<any>;
+  removeFromList: (listKey: string, userKeys: string | string[], signal?: AbortSignal) => Promise<void>;
 };
+
+// ============================================================================
+// Route Definitions
+// ============================================================================
 
 const DEFAULT_API_BASE_URL = "https://api.flagcontrol.com/v1";
 
+/**
+ * Centralized route definitions for all SDK API endpoints.
+ * Each route is a function that takes route parameters and returns the path.
+ */
+const ROUTES = {
+  // Flag routes
+  evaluateAll: () => "/sdk/flags/evaluate/all",
+  definitions: () => "/sdk/definitions",
+  bootstrap: () => "/sdk/bootstrap",
+
+  // List routes
+  lists: () => "/sdk/lists",
+  list: (listKey: string) => `/sdk/lists/${listKey}`,
+  listUsers: (listKey: string) => `/sdk/lists/${listKey}/users`,
+} as const;
+
+// ============================================================================
+// Request Helper
+// ============================================================================
+
+type RequestOptions<TBody = unknown> = {
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  path: string;
+  body?: TBody;
+  signal?: AbortSignal;
+  errorMessage: string;
+};
+
+/**
+ * Creates a reusable request function bound to the SDK configuration.
+ */
+const createRequestFn = (config: FlagControlConfig) => {
+  const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
+  const fetchImpl = config.fetch || global.fetch;
+
+  if (!fetchImpl) {
+    throw new Error(
+      "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
+    );
+  }
+
+  return async <TResponse, TBody = unknown>(
+    options: RequestOptions<TBody>
+  ): Promise<TResponse> => {
+    const { method, path, body, signal, errorMessage } = options;
+    const url = `${baseUrl}${path}`;
+
+    try {
+      const response = await fetchImpl(url, {
+        method,
+        headers: {
+          "X-FlagControl-SDK-Key": config.sdkKey,
+          "Content-Type": "application/json",
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`${errorMessage}: ${response.status} ${response.statusText}`);
+      }
+
+      // Handle empty responses (e.g., 204 No Content)
+      const contentLength = response.headers.get("content-length");
+      if (response.status === 204 || contentLength === "0") {
+        return undefined as TResponse;
+      }
+
+      return (await response.json()) as TResponse;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw error;
+      }
+      throw new Error(
+        `Network error - ${errorMessage}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  };
+};
+
+// ============================================================================
+// Loader Factory
+// ============================================================================
+
 export const createLoader = (config: FlagControlConfig): Loader => {
+  const request = createRequestFn(config);
+
   return {
-    getFlags: async (
-      context?: EvaluationContext,
-      signal?: AbortSignal
-    ): Promise<Flag[]> => {
-      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-      let url = `${baseUrl}/sdk/flags/evaluate/all`;
-      const fetchImpl = config.fetch || global.fetch;
+    // ========================================================================
+    // Flag Operations
+    // ========================================================================
 
-      if (!fetchImpl) {
-        throw new Error(
-          "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
-        );
-      }
-
-      try {
-        const response = await fetchImpl(url, {
-          method: "POST",
-          headers: {
-            "X-FlagControl-SDK-Key": config.sdkKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ context }),
-          signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch flags: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = (await response.json()) as { flags: Flag[] };
-
-        return data.flags;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw error;
-        }
-        throw new Error(
-          `Network error fetching flags: ${error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+    getFlags: async (context?: EvaluationContext, signal?: AbortSignal): Promise<Flag[]> => {
+      const data = await request<{ flags: Flag[] }>({
+        method: "POST",
+        path: ROUTES.evaluateAll(),
+        body: { context },
+        signal,
+        errorMessage: "Failed to fetch flags",
+      });
+      return data.flags;
     },
-    getFlagDefinitions: async (
-      signal?: AbortSignal
-    ) => {
-      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-      const url = `${baseUrl}/sdk/definitions`;
-      const fetchImpl = config.fetch || global.fetch;
 
-      if (!fetchImpl) {
-        throw new Error(
-          "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
-        );
-      }
-
-      try {
-        const response = await fetchImpl(url, {
-          method: "GET",
-          headers: {
-            "X-FlagControl-SDK-Key": config.sdkKey,
-            "Content-Type": "application/json",
-          },
-          signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch flags: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = (await response.json()) as DefinitionsResponse;
-        return data;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw error;
-        }
-        throw new Error(
-          `Network error fetching flags: ${error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+    getFlagDefinitions: async (signal?: AbortSignal): Promise<DefinitionsResponse> => {
+      return request<DefinitionsResponse>({
+        method: "GET",
+        path: ROUTES.definitions(),
+        signal,
+        errorMessage: "Failed to fetch flag definitions",
+      });
     },
+
     getBootstrap: async (signal?: AbortSignal): Promise<BootstrapResponse> => {
-      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-      const url = `${baseUrl}/sdk/bootstrap`;
-      const fetchImpl = config.fetch || global.fetch;
-
-      if (!fetchImpl) {
-        throw new Error(
-          "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
-        );
-      }
-
-      try {
-        const response = await fetchImpl(url, {
-          method: "GET",
-          headers: {
-            "X-FlagControl-SDK-Key": config.sdkKey,
-            "Content-Type": "application/json",
-          },
-          signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch flags: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = (await response.json()) as BootstrapResponse;
-        return data;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw error;
-        }
-        throw new Error(
-          `Network error fetching flags: ${error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+      return request<BootstrapResponse>({
+        method: "GET",
+        path: ROUTES.bootstrap(),
+        signal,
+        errorMessage: "Failed to fetch bootstrap data",
+      });
     },
+
+    // ========================================================================
+    // List Operations
+    // ========================================================================
+
+    createList: async (list: ListInfo, signal?: AbortSignal): Promise<ListInfo> => {
+      return request<ListInfo>({
+        method: "POST",
+        path: ROUTES.lists(),
+        body: list,
+        signal,
+        errorMessage: "Failed to create list",
+      });
+    },
+
+    deleteList: async (listKey: string, signal?: AbortSignal): Promise<void> => {
+      await request<void>({
+        method: "DELETE",
+        path: ROUTES.list(listKey),
+        signal,
+        errorMessage: "Failed to delete list",
+      });
+    },
+
     addToList: async (
       listKey: string,
-      users:
-        | { key: string;[attrs: string]: any }
-        | Array<{ key: string;[attrs: string]: any }>,
+      users: UserEntry | UserEntry[],
       signal?: AbortSignal
     ): Promise<any> => {
-      const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-      const url = `${baseUrl}/lists/${listKey}/add`;
-      const fetchImpl = config.fetch || global.fetch;
+      return request({
+        method: "POST",
+        path: ROUTES.listUsers(listKey),
+        body: { userKeys: Array.isArray(users) ? users : [users] },
+        signal,
+        errorMessage: "Failed to add to list",
+      });
+    },
 
-      if (!fetchImpl) {
-        throw new Error(
-          "No fetch implementation found. Please provide one in the config or ensure global fetch is available."
-        );
-      }
-
-      try {
-        const response = await fetchImpl(url, {
-          method: "POST",
-          headers: {
-            "X-FlagControl-SDK-Key": config.sdkKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ users: Array.isArray(users) ? users : [users] }),
-          signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to add to list: ${response.status} ${response.statusText}`
-          );
-        }
-
-        return await response.json();
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          throw error;
-        }
-        throw new Error(
-          `Network error adding to list: ${error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+    removeFromList: async (
+      listKey: string,
+      userKeys: string | string[],
+      signal?: AbortSignal
+    ): Promise<void> => {
+      await request<void>({
+        method: "DELETE",
+        path: ROUTES.listUsers(listKey),
+        body: { userKeys: Array.isArray(userKeys) ? userKeys : [userKeys] },
+        signal,
+        errorMessage: "Failed to remove from list",
+      });
     },
   };
 };

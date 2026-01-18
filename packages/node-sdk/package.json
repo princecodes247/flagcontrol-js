@@ -13,7 +13,7 @@
     "lint": "biome check src"
   },
   "dependencies": {
-    "@flagcontrol/core": "^0.2.0"
+    "@flagcontrol/core": "*"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",

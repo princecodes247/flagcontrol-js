@@ -13,7 +13,7 @@
     "lint": "biome check src"
   },
   "dependencies": {
-    "@flagcontrol/core": "^0.2.1",
+    "@flagcontrol/core": "*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

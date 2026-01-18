@@ -98,9 +98,9 @@ export type DefinitionsResponse = {
   flags: FlagManifest[];
   lists: {
     key: string;
+    salt: string;
     members: string[];
   }[];
-  salt: string;
 }
 
 export type BootstrapResponse = {
@@ -129,11 +129,7 @@ export type InferFlags<T extends readonly { key: string; type: 'boolean' | 'stri
  *   }
  * }
  */
-export interface FlagControlProperties {
-  // flags: AppFlags
-  // contextAttributes: "" | ({} & string);
-  // listKeys: "" | ({} & string);
-}
+export interface FlagControlProperties {}
 
 export type AnyFlags = Record<string, any>;
 

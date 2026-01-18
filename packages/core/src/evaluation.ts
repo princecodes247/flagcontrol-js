@@ -90,7 +90,7 @@ export class Evaluator {
         if (!attributeValue) return false;
         if (!listMembers) return false;
 
-        const salt = this.store.salt.get();
+        const salt = this.store.lists.getSalt(listKey);
         if (!salt) return false; // Cannot verify without salt
 
         const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')
@@ -103,7 +103,7 @@ export class Evaluator {
         const listMembers = this.store.lists.get(listKey);
         if (!listMembers) return true;
 
-        const salt = this.store.salt.get();
+        const salt = this.store.lists.getSalt(listKey);
         if (!salt) return true; // Cannot verify
 
         const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')

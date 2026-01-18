@@ -76,8 +76,7 @@ export const createBaseClient = <
             return loader.getFlags(context);
         } else {
             const definitions = await loader.getFlagDefinitions();
-            store.lists.setAll(definitions.lists);
-            store.salt.set(definitions.salt);
+            store.lists.replace(definitions.lists);
             return definitions.flags.map(f => ({
                 ...f,
             } as unknown as Flag));

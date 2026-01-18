@@ -11,19 +11,15 @@ export type FlagStore = {
   };
   lists: {
     get: (key: string) => string[] | undefined;
-    setAll: (lists: { key: string; members: string[] }[]) => void;
-  };
-  salt: {
-    get: () => string | undefined;
-    set: (salt: string) => void;
+    replace: (lists: { key: string; salt: string; members: string[] }[]) => void;
+    getSalt: (key: string) => string | undefined;
   };
 };
 
 export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
   let flags = new Map(initialFlags.map((f) => [f.key, f]));
   let context: EvaluationContext = {};
-  let listMap = new Map<string, string[]>();
-  let projectSalt: string | undefined;
+  let listMap = new Map<string, {salt: string; members: string[]}>();
 
   return {
     get: (key: string) => flags.get(key),
@@ -43,16 +39,11 @@ export const createStore = (initialFlags: readonly Flag[] = []): FlagStore => {
       },
     },
     lists: {
-      get: (key: string) => listMap.get(key),
-      setAll: (lists: { key: string; members: string[] }[]) => {
-        listMap = new Map(lists.map((l) => [l.key, l.members]));
+      get: (key: string) => listMap.get(key)?.members,
+      replace: (lists: { key: string; salt: string; members: string[] }[]) => {
+        listMap = new Map(lists.map((l) => [l.key, {salt: l.salt, members: l.members}]));
       },
-    },
-    salt: {
-      get: () => projectSalt,
-      set: (salt: string) => {
-        projectSalt = salt;
-      },
+      getSalt: (key: string) => listMap.get(key)?.salt,
     },
   };
 };

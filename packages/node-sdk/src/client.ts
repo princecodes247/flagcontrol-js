@@ -126,6 +126,11 @@ export const initFlagControl = <
     waitForInitialization: baseClient.waitForInitialization,
     evaluate,
     reload,
+    addToList: baseClient.addToList,
+    removeFromList: baseClient.removeFromList,
+    createList: baseClient.createList,
+    deleteList: baseClient.deleteList,
+    syncChanges: baseClient.syncChanges,
     identify: async (context: EvaluationContext) => {
       baseClient._store.context.set(context);
       await baseClient.identify(context);
@@ -141,7 +146,6 @@ export const initFlagControl = <
         evaluate: (key, fallback) => evaluate(key, scopedContext, fallback),
       };
     },
-    addToList: baseClient.addToList,
     get: (key, context = {}, fallback) =>
       evaluate(key, context, fallback).value,
     isEnabled: (key, context = {}) =>

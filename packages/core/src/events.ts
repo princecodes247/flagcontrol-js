@@ -38,15 +38,50 @@ const applyChanges = (store: FlagStore, changes: Change[]): boolean => {
   return true;
 };
 
+/**
+ * Parse SSE messages from a text chunk.
+ * SSE format: "data: <json>\n\n"
+ */
+const parseSSEMessages = (buffer: string): { messages: string[]; remaining: string } => {
+  const messages: string[] = [];
+  const lines = buffer.split('\n');
+  let remaining = '';
+  let currentData = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('data:')) {
+      // Extract data after "data:" (with optional space)
+      currentData += line.slice(line.charAt(5) === ' ' ? 6 : 5);
+    } else if (line === '' && currentData) {
+      // Empty line signals end of message
+      messages.push(currentData);
+      currentData = '';
+    } else if (i === lines.length - 1 && line !== '') {
+      // Last line might be incomplete
+      remaining = line;
+    }
+  }
+
+  // If we have partial data, put it back in the buffer
+  if (currentData) {
+    remaining = `data:${currentData}${remaining ? '\n' + remaining : ''}`;
+  }
+
+  return { messages, remaining };
+};
+
 export const createEventManager = (
   config: FlagControlConfig,
   loader: Loader,
   store: FlagStore
 ): EventManager => {
   let pollingController: AbortController | null = null;
-  let eventSource: any | null = null;
+  let streamController: AbortController | null = null;
   let isClosed = false;
   let pollingTimer: ReturnType<typeof setTimeout> | number | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | number | null = null;
 
   const stopPolling = () => {
     if (pollingController) {
@@ -59,10 +94,14 @@ export const createEventManager = (
     }
   };
 
-  const stopSSE = () => {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
+  const stopStream = () => {
+    if (streamController) {
+      streamController.abort();
+      streamController = null;
+    }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
   };
 
@@ -144,87 +183,126 @@ export const createEventManager = (
     poll();
   };
 
-  const startSSE = () => {
-    stopSSE();
+  /**
+   * Start streaming using fetch with ReadableStream.
+   */
+  const startStream = async () => {
+    stopStream();
     if (isClosed) return;
 
-    const EventSourceCtor = config.eventSource || (globalThis as any).EventSource;
-
-    // If SSE is disabled or not available, fallback to polling
-    if (!EventSourceCtor || config.disableSSE) {
+    // If streaming is disabled, fallback to polling
+    if (config.disableStreaming) {
       startPolling();
       return;
     }
 
+    const fetchImpl = config.fetch || globalThis.fetch;
+
+    // If fetch is not available, fallback to polling
+    if (!fetchImpl) {
+      startPolling();
+      return;
+    }
+
+    streamController = new AbortController();
+    const signal = streamController.signal;
+
     try {
       const baseUrl = config.apiBaseUrl || "https://api.flagcontrol.com/v1";
       const currentCursor = store.cursor.get();
-      // Append sdkKey and cursor to query params
-      let url = `${baseUrl}/sdk/changes/stream?sdkKey=${config.sdkKey}`;
+      
+      let url = `${baseUrl}/sdk/changes/stream`;
+      const params = new URLSearchParams({ sdkKey: config.sdkKey });
       if (currentCursor) {
-        url += `&since=${encodeURIComponent(currentCursor)}`;
+        params.set('since', currentCursor);
+      }
+      url += `?${params.toString()}`;
+
+      const response = await fetchImpl(url, {
+        method: 'GET',
+        headers: {
+          'X-FlagControl-SDK-Key': config.sdkKey,
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Stream connection failed: ${response.status} ${response.statusText}`);
       }
 
-      // Attempt to pass headers for Node.js libraries that support it
-      const initDict = {
-        headers: {
-          "X-FlagControl-SDK-Key": config.sdkKey
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      // Read the stream
+      while (!signal.aborted) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          // Stream ended, attempt to reconnect after a delay
+          if (!isClosed && !signal.aborted) {
+            reconnectTimer = setTimeout(() => startStream(), 1000);
+          }
+          break;
         }
-      };
 
-      eventSource = new EventSourceCtor(url, initDict);
+        // Decode and buffer the chunk
+        buffer += decoder.decode(value, { stream: true });
 
-      eventSource.onopen = () => {
-        // Connection established
-      };
+        // Parse SSE messages from buffer
+        const { messages, remaining } = parseSSEMessages(buffer);
+        buffer = remaining;
+        console.log({messages})
 
-      eventSource.onmessage = (event: any) => {
-        if (isClosed) return;
-        try {
-          const data = JSON.parse(event.data);
-          
-          // Handle change events from stream
-          if (data.cursor && Array.isArray(data.changes)) {
-            const hasChanges = applyChanges(store, data.changes as Change[]);
-            store.cursor.set(data.cursor);
-            if (hasChanges) {
+        // Process each message
+        for (const message of messages) {
+          if (isClosed || signal.aborted) break;
+
+          try {
+            const data = JSON.parse(message);
+
+            // Handle change events from stream
+            if (data.cursor && Array.isArray(data.changes)) {
+              const hasChanges = applyChanges(store, data.changes as Change[]);
+              store.cursor.set(data.cursor);
+              if (hasChanges) {
+                config.onFlagsUpdated?.();
+              }
+            } else if (data && Array.isArray(data.flags)) {
+              // Legacy full flags response
+              store.set(data.flags as Flag[]);
               config.onFlagsUpdated?.();
             }
-          } else if (data && Array.isArray(data.flags)) {
-            // Legacy full flags response
-            store.set(data.flags as Flag[]);
-            config.onFlagsUpdated?.();
+          } catch (err) {
+            config.onError?.(err as Error);
           }
-        } catch (err) {
-          config.onError?.(err as Error);
         }
-      };
+      }
+    } catch (error) {
+      if (isClosed || signal.aborted) return;
 
-      eventSource.onerror = (err: any) => {
-        if (isClosed) return;
-        // On error, close SSE and fallback to polling
-        config.onError?.(new Error("SSE connection error, falling back to polling"));
-        stopSSE();
-        startPolling();
-      };
-
-    } catch (err) {
-      if (isClosed) return;
-      config.onError?.(err as Error);
+      // On error, fallback to polling
+      config.onError?.(new Error(`Stream error, falling back to polling: ${(error as Error).message}`));
+      stopStream();
       startPolling();
     }
   };
 
   const start = () => {
     isClosed = false;
-    // Try SSE first
-    startSSE();
+    startStream();
   };
 
   const stop = () => {
     isClosed = true;
     stopPolling();
-    stopSSE();
+    stopStream();
   };
 
   return {

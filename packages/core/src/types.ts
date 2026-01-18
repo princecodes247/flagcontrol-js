@@ -70,8 +70,8 @@ export interface FlagControlConfig {
   fetch?: typeof fetch;
   onFlagsUpdated?: () => void;
   onError?: (error: Error) => void;
-  eventSource?: EventSource;
-  disableSSE?: boolean;
+  /** Disable real-time streaming and use polling only */
+  disableStreaming?: boolean;
   telemetryIntervalMs?: number;
   disableTelemetry?: boolean;
   telemetrySampleRate?: number;

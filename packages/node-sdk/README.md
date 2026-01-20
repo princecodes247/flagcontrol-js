@@ -13,7 +13,9 @@ npm install @flagcontrol/node
 
 ## Usage
 
-### 1. Initialize the client
+### 1. Initialize the Client
+
+Initialize the client with your SDK key. You can also define your flag types for full TypeScript support.
 
 ```typescript
 import { createFlagControlClient } from '@flagcontrol/node';
@@ -21,33 +23,104 @@ import { createFlagControlClient } from '@flagcontrol/node';
 const client = createFlagControlClient({
   sdkKey: 'YOUR_SDK_KEY',
 });
+
+// Wait for the client to initialize (fetch initial flags)
+await client.waitForInitialization();
 ```
 
-### 2. Evaluate flags
+### 2. Evaluate Flags
 
+#### Check if a feature is enabled
 ```typescript
-// Check if a feature is enabled
-const isEnabled = client.isEnabled('new-feature', { userId: 'user-123' });
+const isEnabled = client.isEnabled('new-checkout-flow');
 
 if (isEnabled) {
-  console.log('New feature enabled');
+  // Show new checkout flow
 }
-
-// Get flag value with fallback
-const value = client.get('config-flag', { userId: 'user-123' }, 'default-value');
 ```
 
-### 3. List management
+#### Get a flag value with a fallback
+```typescript
+const bannerColor = client.get('hero-banner-color', { userId: '123' }, 'blue');
+```
+
+### 3. Context Management
+
+You can set a global context for the client or pass context per evaluation.
+
+#### Set Global Context
+This context will be used for all subsequent evaluations.
+```typescript
+client.setContext({
+  userId: 'user-123',
+  email: 'user@example.com',
+  plan: 'pro'
+});
+```
+
+#### Identify User
+Update the current context and trigger a re-evaluation/sync if needed.
+```typescript
+await client.identify({ userId: 'user-456', plan: 'enterprise' });
+```
+
+#### Individual Evaluation Context
+Pass context specifically for one evaluation. This merges with (and overrides) global context.
+```typescript
+client.get('hero-banner-color', { device: 'mobile' }, 'blue');
+```
+
+#### Scoped Client
+Create a lightweight client instance bound to a specific context.
+```typescript
+const userClient = client.forContext({ userId: 'user-789' });
+const color = userClient.get('hero-banner-color', 'blue');
+```
+
+### 4. Real-time Updates
+
+Listen for flag changes to update your application state dynamically.
 
 ```typescript
-// Add users to a targeting list
-await client.addToList('beta-users', { key: 'user-123' });
+// Listen for changes to a specific flag
+const unsubscribe = client.onFlagChange('hero-banner-color', (newValue) => {
+  console.log('Banner color changed to:', newValue);
+});
+
+// Listen for any flag change
+const unsubscribeAll = client.onFlagsChange(() => {
+  console.log('Some flags have changed');
+});
+```
+
+### 5. List Management
+
+Manage targeting lists programmatically.
+
+```typescript
+// Create a new list
+await client.createList({
+  key: 'beta-testers',
+  name: 'Beta Testers',
+  description: 'Users who opted in for beta features'
+});
+
+// Add users to a list
+await client.addToList('beta-testers', { key: 'user-123' });
 
 // Remove users from a list
-await client.removeFromList('beta-users', 'user-123');
+await client.removeFromList('beta-testers', 'user-123');
 
-// Sync changes manually
-await client.syncChanges();
+// Delete a list
+await client.deleteList('beta-testers');
+```
+
+### 6. Clean Up
+
+Close the client when your application shuts down to stop background polling/streams.
+
+```typescript
+client.close();
 ```
 
 ## Related Packages

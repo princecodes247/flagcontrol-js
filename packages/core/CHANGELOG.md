@@ -1,5 +1,11 @@
 # @flagcontrol/core
 
+## 0.2.4
+
+### Patch Changes
+
+- bde6ab6: update tags
+
 ## 0.2.3
 
 ### Patch Changes

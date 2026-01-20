@@ -1,5 +1,13 @@
 # flagcontrol
 
+## 0.2.3
+
+### Patch Changes
+
+- 1052e27: update readme guides
+- Updated dependencies [bde6ab6]
+  - @flagcontrol/core@0.2.4
+
 ## 0.2.2
 
 ### Patch Changes

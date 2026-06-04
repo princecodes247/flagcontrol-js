@@ -28,8 +28,28 @@ export const initFlagControl = <
   offlineFlags: readonly Flag[] = [],
   context?: EvaluationContext
 ): FlagControlClient<F> => {
-  const baseClient = createBaseClient<F>({ ...config, evaluationMode: 'remote' }, offlineFlags, context);
+  let pollingIntervalMs = config.pollingIntervalMs ?? 0;
+  if (pollingIntervalMs > 0 && pollingIntervalMs < 60000) {
+    console.warn(`[FlagControl] pollingIntervalMs (${pollingIntervalMs}ms) is less than the minimum allowed (60000ms). Defaulting to 60000ms.`);
+    pollingIntervalMs = 60000;
+  }
+
+  const baseClient = createBaseClient<F>({
+    ...config,
+    pollingIntervalMs,
+    evaluationMode: 'remote'
+  }, offlineFlags, context);
   const listeners = new Set<() => void>();
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        baseClient._events.stop();
+      } else {
+        baseClient._events.start();
+      }
+    });
+  }
 
   const subscribe = (listener: () => void) => {
     listeners.add(listener);

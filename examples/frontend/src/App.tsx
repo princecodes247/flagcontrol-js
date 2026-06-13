@@ -1,8 +1,12 @@
 import './App.css'
-import { FlagProvider, useFlag } from '@flagcontrol/react'
+import { FlagProvider, useFlag, useFlagControl } from '@flagcontrol/react'
 
 function AppContent() {
-  const isNewFeatureEnabled = useFlag('new-feature', false)
+  const isNewFeatureEnabled = useFlag("go-flag", false);
+  const client = useFlagControl()
+  client.addToList('new-feature', {
+    key: 'user-id',
+  })
   return (
     <>
       <div className="card">
@@ -17,7 +21,7 @@ function AppContent() {
 
 function App() {
   return (
-    <FlagProvider config={{ sdkKey: 'test-sdk-key' }}>
+    <FlagProvider config={{ pollingIntervalMs: 2000, sdkKey: 'test-sdk-key', }}>
       <AppContent />
     </FlagProvider>
   )

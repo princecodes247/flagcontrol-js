@@ -19,12 +19,19 @@ app.get('/', async (req, res) => {
             id: 'user-123',
         });
 
+        // await flagControl.addToList("testq", {
+        //     key: "user-123"
+        // })
+
+        // await flagControl.removeFromList("testq","user-123")
+
         // Example flag evaluation
-        const isFeatureEnabled = flags.get("aasd");
-        console.log({ isFeatureEnabled })
+        flagControl.setContext
+        const isPaymentAvailable = flags.get("dark-mode");
+        console.log({ isPaymentAvailable })
         res.json({
             message: 'Hello from Backend!',
-            featureEnabled: isFeatureEnabled,
+            featureEnabled: isPaymentAvailable,
         });
     } catch (error) {
         console.error('Error evaluating flag:', error);

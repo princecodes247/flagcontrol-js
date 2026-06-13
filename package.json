@@ -7,9 +7,9 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
     "docs:build": "vitepress build docs",
     "docs:serve": "vitepress serve docs",
     "docs:dev": "vitepress dev docs"

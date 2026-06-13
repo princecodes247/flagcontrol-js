@@ -27,6 +27,11 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Update npm and configure OIDC
+        run: |
+          npm install -g npm@latest
+          npm config set registry https://registry.npmjs.org/
+      
       - name: Build
         run: npm run build
 

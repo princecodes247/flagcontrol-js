@@ -1,6 +1,6 @@
 {
   "name": "@flagcontrol/core",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Core SDK for FlagControl feature flag management",
   "license": "MIT",
   "keywords": [

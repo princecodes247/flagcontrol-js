@@ -1,5 +1,13 @@
 # @flagcontrol/react
 
+## 0.2.6
+
+### Patch Changes
+
+- Sync package versions to 0.2.6.
+- Updated dependencies
+  - @flagcontrol/core@0.2.6
+
 ## 0.2.5
 
 ### Patch Changes

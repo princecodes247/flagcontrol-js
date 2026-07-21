@@ -1,5 +1,13 @@
 # @flagcontrol/react
 
+## 0.2.5
+
+### Patch Changes
+
+- 8467a43: Make SDKs production-ready with SSE backoff, telemetry batching, globalThis fetch, and localStorage caching.
+- Updated dependencies [8467a43]
+  - @flagcontrol/core@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes

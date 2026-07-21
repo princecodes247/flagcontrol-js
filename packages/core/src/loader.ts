@@ -74,7 +74,7 @@ type RequestOptions<TBody = unknown> = {
  */
 const createRequestFn = (config: FlagControlConfig) => {
   const baseUrl = config.apiBaseUrl || DEFAULT_API_BASE_URL;
-  const fetchImpl = config.fetch || global.fetch;
+  const fetchImpl = config.fetch || globalThis.fetch;
 
   if (!fetchImpl) {
     throw new Error(

@@ -63,7 +63,59 @@ export const createBaseClient = <
     offlineFlags: readonly Flag[] = [],
     initialContext?: EvaluationContext
 ): BaseClient<F> => {
-    const store = createStore(offlineFlags);
+    const cacheKeyFlags = `flagcontrol:flags:${config.sdkKey}`;
+    const cacheKeyLists = `flagcontrol:lists:${config.sdkKey}`;
+    const cacheKeyCursor = `flagcontrol:cursor:${config.sdkKey}`;
+
+    let cachedFlags: Flag[] = [];
+    let hasCache = false;
+
+    if (config.enableCaching && typeof window !== "undefined" && window.localStorage) {
+        try {
+            const rawFlags = window.localStorage.getItem(cacheKeyFlags);
+            if (rawFlags) {
+                cachedFlags = JSON.parse(rawFlags);
+                hasCache = true;
+            }
+        } catch (e) {
+            // Ignore cache read error
+        }
+    }
+
+    const store = createStore(hasCache ? cachedFlags : offlineFlags);
+
+    if (hasCache && config.enableCaching && typeof window !== "undefined" && window.localStorage) {
+        try {
+            const rawLists = window.localStorage.getItem(cacheKeyLists);
+            const rawCursor = window.localStorage.getItem(cacheKeyCursor);
+            if (rawLists) {
+                store.lists.replace(JSON.parse(rawLists));
+            }
+            if (rawCursor) {
+                store.cursor.set(rawCursor);
+            }
+        } catch (e) {
+            // Ignore cache load error
+        }
+    }
+
+    const originalOnFlagsUpdated = config.onFlagsUpdated;
+    config.onFlagsUpdated = () => {
+        if (config.enableCaching && typeof window !== "undefined" && window.localStorage) {
+            try {
+                window.localStorage.setItem(cacheKeyFlags, JSON.stringify(store.getAll()));
+                window.localStorage.setItem(cacheKeyLists, JSON.stringify(store.lists.getAll()));
+                const cursor = store.cursor.get();
+                if (cursor) {
+                    window.localStorage.setItem(cacheKeyCursor, cursor);
+                }
+            } catch (e) {
+                // Ignore cache write error
+            }
+        }
+        originalOnFlagsUpdated?.();
+    };
+
     if (initialContext) {
         store.context.set(initialContext);
     }

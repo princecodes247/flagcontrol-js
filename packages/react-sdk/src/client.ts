@@ -38,6 +38,7 @@ export const initFlagControl = <
 
 	const baseClient = createBaseClient<F>(
 		{
+			enableCaching: config.enableCaching ?? true,
 			...config,
 			pollingIntervalMs,
 			evaluationMode: "remote",

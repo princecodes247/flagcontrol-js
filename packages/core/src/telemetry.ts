@@ -19,7 +19,7 @@ export const createTelemetryManager = (
 
     const events: TelemetryEvent[] = [];
     const flushInterval = config.telemetryIntervalMs ?? 60000;
-    const bufferSize = 1;
+    const bufferSize = config.telemetryBufferSize ?? 20;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let isClosed = false;
 

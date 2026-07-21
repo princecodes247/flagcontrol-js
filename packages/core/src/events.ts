@@ -89,6 +89,7 @@ export const createEventManager = (
   let isClosed = false;
   let pollingTimer: ReturnType<typeof setTimeout> | number | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | number | null = null;
+  let reconnectAttempts = 0;
 
   const stopPolling = () => {
     if (pollingController) {
@@ -117,7 +118,7 @@ export const createEventManager = (
    */
   const performFullResync = async (signal?: AbortSignal): Promise<void> => {
     let flags: Flag[] = [];
-    
+
     if (config.evaluationMode === 'remote') {
       flags = await loader.getFlags(store.context.get(), signal);
     } else {
@@ -149,11 +150,11 @@ export const createEventManager = (
 
       while (hasMore && !signal?.aborted) {
         const response = await loader.getChanges(cursor, signal);
-        
+
         if (signal?.aborted) return;
 
         const result = applyChanges(store, response.changes);
-        
+
         // If resync is required, do a full fetch and exit
         if (result === 'resync') {
           await performFullResync(signal);
@@ -231,7 +232,7 @@ export const createEventManager = (
     try {
       const baseUrl = config.apiBaseUrl || "https://api.flagcontrol.com/v1";
       const currentCursor = store.cursor.get();
-      
+
       let url = `${baseUrl}/sdk/changes/stream`;
       const params = new URLSearchParams({ sdkKey: config.sdkKey });
       if (currentCursor) {
@@ -253,6 +254,8 @@ export const createEventManager = (
         throw new Error(`Stream connection failed: ${response.status} ${response.statusText}`);
       }
 
+      reconnectAttempts = 0;
+
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('Response body is not readable');
@@ -268,7 +271,12 @@ export const createEventManager = (
         if (done) {
           // Stream ended, attempt to reconnect after a delay
           if (!isClosed && !signal.aborted) {
-            reconnectTimer = setTimeout(() => startStream(), 1000);
+            const baseDelay = 1000;
+            const maxDelay = 30000;
+            const delay = Math.min(maxDelay, baseDelay * Math.pow(2, reconnectAttempts));
+            const jitter = delay * (0.5 + Math.random() * 0.5);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(() => startStream(), jitter);
           }
           break;
         }
@@ -279,7 +287,6 @@ export const createEventManager = (
         // Parse SSE messages from buffer
         const { messages, remaining } = parseSSEMessages(buffer);
         buffer = remaining;
-        console.log({messages})
 
         // Process each message
         for (const message of messages) {
@@ -291,7 +298,7 @@ export const createEventManager = (
             // Handle change events from stream
             if (data.cursor && Array.isArray(data.changes)) {
               const result = applyChanges(store, data.changes as Change[]);
-              
+
               // If resync is required, do a full fetch
               if (result === 'resync') {
                 await performFullResync(signal);

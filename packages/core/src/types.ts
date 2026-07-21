@@ -73,9 +73,11 @@ export interface FlagControlConfig {
   /** Disable real-time streaming and use polling only */
   disableStreaming?: boolean;
   telemetryIntervalMs?: number;
+  telemetryBufferSize?: number;
   disableTelemetry?: boolean;
   telemetrySampleRate?: number;
   evaluationMode?: 'local' | 'remote';
+  enableCaching?: boolean;
 }
 
 export interface TelemetryEvent {

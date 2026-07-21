@@ -12,6 +12,7 @@ const flagControl = createFlagControlClient({
     pollingIntervalMs: 50000,
 });
 
+
 app.get('/', async (req, res) => {
     try {
 
@@ -28,7 +29,6 @@ app.get('/', async (req, res) => {
         // Example flag evaluation
         flagControl.setContext
         const isPaymentAvailable = flags.get("dark-mode");
-        console.log({ isPaymentAvailable })
         res.json({
             message: 'Hello from Backend!',
             featureEnabled: isPaymentAvailable,

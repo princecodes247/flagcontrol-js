@@ -1,5 +1,11 @@
 # @flagcontrol/core
 
+## 0.2.7
+
+### Patch Changes
+
+- e39a606: improve DX
+
 ## 0.2.6
 
 ### Patch Changes

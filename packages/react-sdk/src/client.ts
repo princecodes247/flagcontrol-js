@@ -25,7 +25,7 @@ export const initFlagControl = <
 	F extends Record<string, any> = RegisteredFlags,
 >(
 	config: FlagControlConfig,
-	offlineFlags: readonly Flag[] = [],
+	initialFlags: readonly Flag[] = [],
 	context?: EvaluationContext,
 ): FlagControlClient<F> => {
 	let pollingIntervalMs = config.pollingIntervalMs ?? 0;
@@ -43,7 +43,7 @@ export const initFlagControl = <
 			pollingIntervalMs,
 			evaluationMode: "remote",
 		},
-		offlineFlags,
+		initialFlags,
 		context,
 	);
 	const listeners = new Set<() => void>();
@@ -101,14 +101,14 @@ export const initFlagControl = <
  * Creates a new FlagControl client for React applications.
  *
  * @param config - The configuration for the SDK, including the SDK key.
- * @param offlineFlags - Optional list of flags to use in offline mode.
+ * @param initialFlags - Optional pre-evaluated flags for SSR hydration or offline use.
  * @returns A FlagControlClient instance.
  */
 export function createFlagControlClient<F extends AnyFlags = RegisteredFlags>(
 	config: FlagControlConfig,
-	offlineFlags: readonly Flag[] = [],
+	initialFlags: readonly Flag[] = [],
 	context?: EvaluationContext,
 ): FlagControlClient<F> {
-	const client = initFlagControl(config, offlineFlags, context);
+	const client = initFlagControl(config, initialFlags, context);
 	return client as FlagControlClient<F>;
 }

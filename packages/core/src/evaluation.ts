@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import type { FlagStore } from "./store";
 import { getBucket } from "./utils/hashing";
-import crypto from 'crypto';
+import { sha256 } from 'js-sha256';
 
 export class Evaluator {
   constructor(private store: FlagStore) { }
@@ -93,7 +93,7 @@ export class Evaluator {
         const salt = this.store.lists.getSalt(listKey);
         if (!salt) return false; // Cannot verify without salt
 
-        const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')
+        const hashedValue = sha256.hmac(salt, attributeValue.toString());
 
         return listMembers.includes(hashedValue);
       }
@@ -106,7 +106,7 @@ export class Evaluator {
         const salt = this.store.lists.getSalt(listKey);
         if (!salt) return true; // Cannot verify
 
-        const hashedValue = crypto.createHmac('sha256', salt).update(attributeValue.toString()).digest('hex')
+        const hashedValue = sha256.hmac(salt, attributeValue.toString());
         return !listMembers.includes(hashedValue);
       }
       default:

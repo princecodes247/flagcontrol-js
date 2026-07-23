@@ -25,12 +25,15 @@
     "lint": "biome check src"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.5.3",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0",
-    "@biomejs/biome": "1.5.3"
+    "typescript": "^5.0.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/princecodes247/flagcontrol-js.git"
+  },
+  "dependencies": {
+    "js-sha256": "^0.12.0"
   }
 }

@@ -13,7 +13,10 @@ const FlagControlContext = createContext<FlagControlClient | null>(null);
 
 export interface FlagProviderProps {
 	config: FlagControlConfig;
+	/** @deprecated Use initialFlags instead for SSR hydration */
 	offlineFlags?: readonly Flag[];
+	/** Pre-evaluated flags for SSR hydration to prevent layout shifts */
+	initialFlags?: readonly Flag[];
 	context?: EvaluationContext;
 	children: React.ReactNode;
 }
@@ -21,6 +24,7 @@ export interface FlagProviderProps {
 export const FlagProvider: React.FC<FlagProviderProps> = ({
 	config,
 	offlineFlags,
+	initialFlags,
 	context,
 	children,
 }) => {
@@ -29,7 +33,7 @@ export const FlagProvider: React.FC<FlagProviderProps> = ({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional
 	useEffect(() => {
 		// Initialize the client
-		const newClient = initFlagControl(config, offlineFlags, context);
+		const newClient = initFlagControl(config, initialFlags || offlineFlags, context);
 		setClient(newClient);
 
 		return () => {

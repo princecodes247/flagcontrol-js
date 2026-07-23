@@ -56,6 +56,7 @@ export type FlagTypeValue = {
 
 export type Flag = {
   key: string;
+  isServerOnly?: boolean;
   defaultVariantId?: string;
   variants?: readonly Variant[];
   targets?: readonly Target[];
@@ -91,6 +92,7 @@ export interface TelemetryEvent {
 export type FlagManifest = {
   key: string,
   type: 'boolean' | 'string' | 'number' | 'json',
+  isServerOnly?: boolean,
   defaults: string[] | number[] | boolean[] | Record<string, unknown>[] | undefined,
   variants: string[] | number[] | boolean[] | Record<string, unknown>[] | undefined,
   rules: string[] | number[] | boolean[] | Record<string, unknown>[] | undefined,

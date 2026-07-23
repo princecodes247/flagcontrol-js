@@ -1,5 +1,14 @@
 # @flagcontrol/react
 
+## 0.2.7
+
+### Patch Changes
+
+- e39a606: improve DX
+- Updated dependencies [e39a606]
+  - @flagcontrol/node@0.2.5
+  - @flagcontrol/core@0.2.7
+
 ## 0.2.6
 
 ### Patch Changes

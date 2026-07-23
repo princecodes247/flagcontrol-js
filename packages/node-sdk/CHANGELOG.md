@@ -1,5 +1,13 @@
 # @flagcontrol/node
 
+## 0.2.5
+
+### Patch Changes
+
+- e39a606: improve DX
+- Updated dependencies [e39a606]
+  - @flagcontrol/core@0.2.7
+
 ## 0.2.4
 
 ### Patch Changes

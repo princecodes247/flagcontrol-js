@@ -15,7 +15,7 @@ npm install @flagcontrol/react
 
 ### 1. Wrap your app with `FlagProvider`
 
-Wrap your application root with `FlagProvider`. Pass your SDK key in the `config` prop. You can also pass an initial `context` or `offlineFlags` for SSR/offline support.
+Wrap your application root with `FlagProvider`. Pass your SDK key in the `config` prop. You can also pass an initial `context` or `initialFlags` for SSR support.
 
 ```tsx
 import { FlagProvider } from '@flagcontrol/react';
@@ -37,7 +37,41 @@ function App() {
 }
 ```
 
-### 2. Use flags in your components
+### 2. Server-Side Rendering (SSR) & Hydration
+
+If you are using a framework like Next.js, TanStack Start, or Remix, you can evaluate flags on the server using `@flagcontrol/node` and pass them to the client to prevent layout shifts.
+
+**Server Component / Loader (Next.js Example)**
+```tsx
+import { FlagControl } from "@flagcontrol/node";
+import { ClientLayout } from "./client-layout";
+
+export default async function Layout({ children }) {
+  const nodeClient = new FlagControl({ sdkKey: process.env.FLAGCONTROL_SECRET_KEY });
+  const serverFlags = await nodeClient.getAllFlags({ userId: "user-123" });
+
+  return <ClientLayout initialFlags={serverFlags}>{children}</ClientLayout>;
+}
+```
+
+**Client Component (`client-layout.tsx`)**
+```tsx
+"use client";
+import { FlagProvider } from "@flagcontrol/react";
+
+export function ClientLayout({ initialFlags, children }) {
+  return (
+    <FlagProvider 
+      config={{ sdkKey: process.env.NEXT_PUBLIC_FLAGCONTROL_CLIENT_KEY }} 
+      initialFlags={initialFlags}
+    >
+      {children}
+    </FlagProvider>
+  );
+}
+```
+
+### 3. Use flags in your components
 
 Use the `useFlag` hook to evaluate flags. It handles updates automatically when flags change or context is updated.
 
@@ -61,7 +95,7 @@ You can also pass a specific context to `useFlag` for per-flag evaluation overri
 const isMobile = useFlag('mobile-feature', false, { device: 'mobile' });
 ```
 
-### 3. Context Management
+### 4. Context Management
 
 You can update the global context dynamically, for example after user login. This triggers a re-fetch of flags.
 
@@ -83,7 +117,7 @@ function LoginButton() {
 }
 ```
 
-### 4. Real-time Updates
+### 5. Real-time Updates
 
 The React SDK automatically subscribes to changes. You don't need to do anything special; `useFlag` hooks will re-render your components when flag definitions change or when you validly call `identify`.
 
@@ -103,7 +137,7 @@ useEffect(() => {
 await client.reload();
 ```
 
-### 5. List Management
+### 6. List Management
 
 You can manage targeting lists directly from the client if needed (e.g. for admin panels or user opt-ins).
 

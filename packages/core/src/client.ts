@@ -60,7 +60,7 @@ export const createBaseClient = <
     F extends Record<string, any> = RegisteredFlags,
 >(
     config: FlagControlConfig,
-    offlineFlags: readonly Flag[] = [],
+    initialFlags: readonly Flag[] = [],
     initialContext?: EvaluationContext
 ): BaseClient<F> => {
     const cacheKeyFlags = `flagcontrol:flags:${config.sdkKey}`;
@@ -82,7 +82,7 @@ export const createBaseClient = <
         }
     }
 
-    const store = createStore(hasCache ? cachedFlags : offlineFlags);
+    const store = createStore(hasCache ? cachedFlags : initialFlags);
 
     if (hasCache && config.enableCaching && typeof window !== "undefined" && window.localStorage) {
         try {

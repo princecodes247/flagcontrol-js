@@ -30,6 +30,41 @@ You can pass an initial context to `FlagProvider` to fetch flags for a specific 
 </FlagProvider>
 ```
 
+### Server-Side Rendering (SSR) & Hydration
+
+If you are using a framework like Next.js, TanStack Start, or Remix, you can evaluate flags on the server using `@flagcontrol/react/server` and pass them to the client to prevent layout shifts.
+
+**Server Component / Loader (Next.js Example)**
+```tsx
+import { FlagControl } from "@flagcontrol/react/server";
+import { ClientLayout } from "./client-layout";
+
+export default async function Layout({ children }) {
+  const nodeClient = new FlagControl({ sdkKey: process.env.FLAGCONTROL_SECRET_KEY });
+  const serverFlags = await nodeClient.getAllFlags({ userId: "user-123" });
+
+  return <ClientLayout initialFlags={serverFlags}>{children}</ClientLayout>;
+}
+```
+
+**Client Component (`client-layout.tsx`)**
+```tsx
+"use client";
+import { FlagProvider } from "@flagcontrol/react";
+
+export function ClientLayout({ initialFlags, children }) {
+  return (
+    <FlagProvider 
+      config={{ sdkKey: process.env.NEXT_PUBLIC_FLAGCONTROL_CLIENT_KEY }} 
+      initialFlags={initialFlags}
+    >
+      {children}
+    </FlagProvider>
+  );
+}
+```
+
+
 ## Hooks
 
 ### `useFlag`

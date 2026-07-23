@@ -60,9 +60,9 @@ export const initFlagControl = <
   F extends Record<string, any> = RegisteredFlags,
 >(
   config: FlagControlConfig,
-  offlineFlags: readonly Flag[] = []
+  initialFlags: readonly Flag[] = []
 ): FlagControlClient<F> => {
-  const baseClient = createBaseClient<F>({ ...config, evaluationMode: config.evaluationMode ?? 'local' }, offlineFlags);
+  const baseClient = createBaseClient<F>({ ...config, evaluationMode: config.evaluationMode ?? 'local' }, initialFlags);
 
 
   const flagListeners = new Map<string, Set<FlagChangeHandler>>();
@@ -178,15 +178,15 @@ export const initFlagControl = <
  * Creates a new FlagControl client.
  *
  * @param config - The configuration for the SDK, including the SDK key.
- * @param offlineFlags - Optional list of flags to use in offline mode.
+ * @param initialFlags - Optional pre-evaluated flags.
  * @returns A FlagControlClient instance.
  */
 export function createFlagControlClient<
   F extends AnyFlags = RegisteredFlags,
 >(
   config: FlagControlConfig,
-  offlineFlags: readonly Flag[] = []
+  initialFlags: readonly Flag[] = []
 ): FlagControlClient<F> {
-  const client = initFlagControl(config, offlineFlags);
+  const client = initFlagControl(config, initialFlags);
   return client as FlagControlClient<F>;
 }
